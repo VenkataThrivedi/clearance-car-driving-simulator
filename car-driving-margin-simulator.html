@@ -1,0 +1,1220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#f5f7f6">
+<title>Clearance | Driving Geometry Lab</title>
+<style>
+:root { --ink:#203b38; --muted:#73817d; --line:#dce3df; --paper:#fff; --surface:#f5f7f6; --teal:#147c72; --cyan:#138c99; --amber:#c68326; --red:#b84035; --mono:Consolas,"Liberation Mono",monospace; }
+* { box-sizing:border-box; }
+body { margin:0; color:var(--ink); background:var(--surface); font-family:Bahnschrift,"Aptos","Segoe UI",sans-serif; font-size:13px; letter-spacing:0; }
+button,input,select { font:inherit; color:inherit; }
+button,select,input[type=checkbox],input[type=range] { cursor:pointer; }
+button { display:inline-flex; align-items:center; justify-content:center; gap:7px; min-height:34px; border:1px solid var(--line); border-radius:5px; background:white; padding:7px 11px; transition:background .15s,border-color .15s; touch-action:manipulation; }
+button:hover { background:#edf3ef; border-color:#aabdb5; }
+button:focus-visible,input:focus-visible,select:focus-visible,canvas:focus-visible,summary:focus-visible { outline:3px solid #65b6a3; outline-offset:3px; }
+button[aria-pressed=true],button.active { color:#fff; background:var(--teal); border-color:var(--teal); }
+button:disabled { opacity:.42; cursor:default; }
+button svg,.icon { width:17px; height:17px; stroke:currentColor; fill:none; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; flex:none; }
+.icon-button { width:34px; height:34px; padding:7px; flex:none; }
+.app-header { min-height:72px; padding:12px 26px; display:flex; align-items:center; justify-content:space-between; gap:16px; border-bottom:1px solid var(--line); background:var(--paper); }
+.brand { display:flex; gap:12px; align-items:center; }
+.brand-mark { width:37px; height:37px; color:var(--teal); display:grid; place-items:center; border:1px solid #b6d6cb; border-radius:8px; background:#edf5ef; }
+.brand-mark svg { width:25px; height:25px; }
+h1 { font: bold 25px Georgia,serif; margin:0; }
+.eyebrow { font-size:9px; font-weight:600; letter-spacing:0; color:var(--muted); margin-top:3px; }
+.header-actions { display:flex; gap:14px; align-items:center; }
+.header-note { font:10px var(--mono); color:var(--muted); }
+.workspace { display:grid; grid-template-columns:minmax(0,1fr) 342px; height:calc(100dvh - 106px); min-height:670px; }
+.stage { min-width:0; display:flex; flex-direction:column; overflow:hidden; }
+.stage-toolbar { padding:12px 20px; min-height:60px; display:flex; gap:10px; align-items:center; flex-wrap:wrap; border-bottom:1px solid var(--line); background:#fbfcfb; }
+.scenario-select { display:flex; align-items:center; gap:8px; margin-right:auto; min-width:0; }
+.scenario-select svg { color:var(--teal); }
+select { background:white; border:1px solid var(--line); padding:8px 28px 8px 9px; border-radius:4px; max-width:100%; }
+#exercise { border:0; background:transparent; padding-left:0; font-weight:600; max-width:215px; }
+.mode-button { font-size:11px; min-height:33px; padding:6px 9px; }
+.scene { flex:1; min-height:460px; position:relative; overflow:hidden; background:#eef2ed; }
+#world { width:100%; height:100%; display:block; touch-action:none; outline-offset:-4px; }
+.scene-info { position:absolute; top:23px; left:25px; pointer-events:none; max-width:calc(100% - 100px); }
+.scene-kicker { display:flex; align-items:center; gap:6px; font:10px var(--mono); color:#526a61; }
+.live-dot { width:6px; height:6px; border-radius:50%; background:var(--teal); }
+.scene-info h2 { font-size:24px; font-weight:500; margin:9px 0 5px; }
+.scene-info p { margin:0; color:#687a72; font-size:12px; }
+.view-tools { position:absolute; right:18px; top:19px; display:flex; flex-direction:column; gap:6px; }
+.view-tools button { box-shadow:0 2px 6px #233c3210; }
+.scene-legend { position:absolute; bottom:18px; left:22px; display:grid; grid-template-columns:repeat(2,auto); gap:8px 18px; padding:12px 14px; background:#fffffff0; border:1px solid #dce3df; border-radius:5px; font-size:10px; pointer-events:none; }
+.legend-item { display:flex; align-items:center; gap:7px; }
+.swatch { width:20px; border-top:2px solid var(--cyan); }
+.swatch.dashed { border-top-style:dashed; }
+.swatch.rear { border-color:var(--amber); }
+.swatch.body { height:8px; border:1px solid #147c7270; background:#147c7212; }
+.swatch.center { border-top:1px dashed #7d8985; }
+.scene-scale { position:absolute; bottom:20px; right:20px; color:#667b70; font:10px var(--mono); text-align:center; pointer-events:none; }
+.scale-line { border:solid #728878; border-width:0 1px 2px; height:7px; margin-bottom:5px; }
+.telemetry { min-height:60px; display:flex; align-items:center; gap:24px; padding:10px 22px; border-top:1px solid var(--line); background:white; }
+.telemetry-item { min-width:65px; }
+.tiny-label { font-size:9px; color:var(--muted); text-transform:uppercase; display:block; margin-bottom:4px; }
+.telemetry-value { font:17px var(--mono); }
+.telemetry-value small { font:10px Bahnschrift,"Segoe UI",sans-serif; color:var(--muted); }
+.status { margin-left:auto; font-size:11px; color:var(--teal); text-align:right; max-width:260px; line-height:1.5; }
+.status.warning { color:#a36a1c; }
+.status.danger { color:var(--red); }
+.status strong { display:block; font-size:11px; }
+.panel { border-left:1px solid var(--line); background:white; min-height:0; display:flex; flex-direction:column; }
+.panel-tabs { display:flex; padding:8px 17px 0; border-bottom:1px solid var(--line); flex:none; }
+.panel-tabs button { width:33.333%; border:0; border-radius:0; background:transparent; color:var(--muted); font-size:12px; height:43px; border-bottom:2px solid transparent; }
+.panel-tabs button[aria-selected=true] { color:var(--teal); border-bottom-color:var(--teal); font-weight:600; }
+.panel-scroll { overflow-y:auto; scrollbar-width:thin; scrollbar-color:#cbd7cf transparent; }
+.tab-content { display:none; }
+.tab-content.active { display:block; }
+.panel-section { padding:19px 21px; border-bottom:1px solid #e7ece8; }
+.section-heading { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:14px; }
+h3 { font-size:14px; font-weight:600; margin:0; }
+.pill { font:9px var(--mono); color:var(--teal); background:#edf5f0; border:1px solid #d4e6db; padding:4px 6px; border-radius:3px; white-space:nowrap; }
+.steering-layout { display:grid; grid-template-columns:151px 1fr; align-items:center; gap:13px; }
+.steering-dial { position:relative; width:151px; height:151px; }
+#steeringWheel { width:151px; height:151px; cursor:grab; touch-action:none; }
+#steeringWheel:active { cursor:grabbing; }
+.wheel-caption { text-align:center; font:10px var(--mono); color:var(--muted); margin-top:0; }
+.angle-large { font:30px var(--mono); margin-bottom:3px; }
+.angle-direction { color:var(--muted); font-size:10px; }
+.steering-secondary { border-top:1px solid var(--line); margin-top:12px; padding-top:10px; }
+.steering-secondary strong { font:17px var(--mono); }
+.steering-secondary span { display:block; font-size:9px; color:var(--muted); margin-top:4px; }
+.range-label { display:flex; justify-content:space-between; gap:8px; align-items:center; margin:14px 0 6px; font-size:11px; }
+output { font-family:var(--mono); font-size:11px; }
+input[type=range] { width:100%; height:16px; margin:6px 0; accent-color:var(--teal); }
+.range-ticks { display:flex; justify-content:space-between; font:9px var(--mono); color:var(--muted); }
+.steer-buttons { display:grid; grid-template-columns:1fr 1.6fr 1fr; gap:7px; margin-top:12px; }
+.steer-buttons button { min-height:31px; font-size:11px; }
+.stat-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; border-top:1px solid #e7ece8; padding-top:15px; margin-top:16px; }
+.stat-grid strong { display:block; font:15px var(--mono); margin-bottom:5px; }
+.stat-grid span { font-size:9px; color:var(--muted); }
+.control-row { display:flex; gap:7px; align-items:center; }
+.gear { display:flex; background:#f2f5f2; border-radius:4px; padding:3px; gap:3px; }
+.gear button { width:34px; height:31px; min-height:31px; border:0; background:transparent; padding:4px; }
+.gear button[aria-pressed=true] { background:var(--teal); }
+.pedals { display:flex; flex:1; gap:6px; }
+.pedals button { flex:1; height:39px; }
+.pedals .brake { color:var(--red); background:#fdf7f5; }
+.check-row { display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:11px; min-height:32px; }
+.check-row label { display:flex; align-items:center; gap:8px; }
+input[type=checkbox] { accent-color:var(--teal); width:14px; height:14px; }
+.margin-grid { display:grid; grid-template-columns:1fr 1fr; gap:0; }
+.margin-cell { padding:10px 0; border-top:1px solid #e9ede9; display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.margin-cell:nth-child(odd) { padding-right:16px; }
+.margin-cell:nth-child(even) { padding-left:16px; border-left:1px solid #e9ede9; }
+.margin-cell span { color:var(--muted); font-size:11px; }
+.margin-cell strong { font:13px var(--mono); white-space:nowrap; }
+.margin-cell strong.near { color:#a56d22; }
+.margin-cell strong.hit { color:var(--red); }
+.observation { background:#f4f8f4; }
+.observation p { color:#5c7166; font-size:11px; line-height:1.7; margin:10px 0 0; }
+.observation strong { color:var(--teal); }
+.observation .section-heading { margin-bottom:4px; }
+.form-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.field { display:flex; flex-direction:column; gap:6px; font-size:10px; color:var(--muted); min-width:0; }
+.input-unit { position:relative; }
+.input-unit input { width:100%; padding:8px 28px 8px 8px; border:1px solid var(--line); border-radius:4px; background:#fbfcfb; font:12px var(--mono); min-width:0; }
+.input-unit span { position:absolute; right:9px; top:9px; font-size:10px; }
+.full { grid-column:1/-1; }
+.section-select { width:100%; margin-bottom:15px; }
+.add-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.add-grid button { justify-content:flex-start; font-size:11px; min-height:40px; }
+.object-list { display:flex; flex-direction:column; gap:5px; max-height:190px; overflow:auto; margin-top:13px; }
+.object-list button { justify-content:space-between; text-align:left; font-size:11px; flex-shrink:0; }
+.object-list small { font:9px var(--mono); opacity:.7; }
+.empty-note { color:var(--muted); font-size:11px; margin:9px 0; }
+.button-row { display:flex; gap:7px; margin-top:14px; }
+.button-row button { flex:1; font-size:11px; }
+.training-summary { display:none; padding:15px 21px; border-bottom:1px solid var(--line); background:#f4f7ed; }
+.training-summary.active { display:block; }
+.training-score { font:28px var(--mono); }
+.score-heading { display:flex; justify-content:space-between; align-items:center; }
+.score-event { font-size:11px; min-height:18px; margin:8px 0; color:#667654; }
+.score-rules { display:grid; grid-template-columns:1fr auto; gap:5px; font-size:10px; color:#6b7762; margin-top:12px; }
+#debugReadout { position:absolute; top:135px; left:22px; margin:0; padding:12px; color:#284a42; background:#fffffff0; border:1px solid var(--line); border-radius:4px; font:10px/1.65 var(--mono); pointer-events:none; }
+.app-footer { min-height:34px; padding:8px 24px; border-top:1px solid var(--line); display:flex; gap:12px; justify-content:space-between; color:#7b8780; font-size:9px; line-height:1.5; }
+.app-footer strong { font-weight:500; color:#607167; }
+[hidden] { display:none !important; }
+@media (min-width:1500px) { .workspace { grid-template-columns:minmax(0,1fr) 370px; } .panel-section { padding-left:25px; padding-right:25px; } }
+@media (max-width:1100px) { .workspace { grid-template-columns:minmax(0,1fr) 318px; } .stage-toolbar { padding:10px 13px; gap:7px; } .mode-button { font-size:10px; } .panel-section { padding:17px; } .telemetry { gap:16px; padding:10px 14px; } .header-note { display:none; } }
+@media (max-width:820px) { .workspace { display:flex; flex-direction:column; height:auto; min-height:0; } .stage { min-height:650px; height:76dvh; } .scene { min-height:460px; } .panel { border-left:0; border-top:1px solid var(--line); } .panel-scroll { overflow:visible; } .panel-tabs { position:sticky; top:0; background:white; z-index:2; } .tab-content.active { display:grid; grid-template-columns:1fr 1fr; align-items:start; } .panel-section { height:100%; } .app-footer { flex-direction:column; gap:3px; } }
+@media (max-width:520px) { .app-header { padding:12px 15px; min-height:67px; } h1 { font-size:23px; } .eyebrow { font-size:8px; } .header-actions { gap:6px; } #resetCar { width:34px; padding:7px; } #resetCar span { display:none; } .stage { min-height:650px; height:85dvh; } .stage-toolbar { gap:6px; padding:9px 12px; } .scenario-select { flex-basis:100%; } #exercise { max-width:100%; } .mode-button { flex:1; font-size:10px; } .scene-info { left:17px; top:17px; } .scene-info h2 { font-size:21px; } .scene-info p { font-size:11px; } .view-tools { right:12px; top:15px; } .scene-legend { left:12px; bottom:12px; padding:9px; gap:7px 12px; font-size:9px; } .scene-scale { right:13px; bottom:15px; } .telemetry { gap:10px; min-height:65px; padding:10px 12px; flex-wrap:wrap; } .telemetry-item { min-width:55px; } .telemetry-value { font-size:14px; } .status { flex:1; font-size:9px; min-width:120px; } .status strong { font-size:10px; } .tab-content.active { display:block; } .panel-section { padding:21px; } .steering-layout { grid-template-columns:151px 1fr; gap:30px; } .app-footer { padding:12px 17px; } }
+@media (prefers-reduced-motion:reduce) { * { transition:none !important; } }
+</style>
+</head>
+<body>
+<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" aria-hidden="true" style="position:absolute"><defs>
+<symbol id="i-car" viewBox="0 0 24 24"><path d="m5 17-1 2m15-2 1 2M5 17h14a2 2 0 0 0 2-2v-3l-3-7H6l-3 7v3a2 2 0 0 0 2 2ZM3 11h18M7 14h.01M17 14h.01"/></symbol>
+<symbol id="i-reset" viewBox="0 0 24 24"><path d="M3 11a9 9 0 1 1 2.6 6.4M3 4v7h7"/></symbol>
+<symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+<symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+<symbol id="i-left" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7M5 12h14"/></symbol>
+<symbol id="i-right" viewBox="0 0 24 24"><path d="m12 5 7 7-7 7M5 12h14"/></symbol>
+<symbol id="i-up" viewBox="0 0 24 24"><path d="m5 12 7-7 7 7M12 19V5"/></symbol>
+<symbol id="i-down" viewBox="0 0 24 24"><path d="m5 12 7 7 7-7M12 5v14"/></symbol>
+<symbol id="i-pause" viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"/></symbol>
+<symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3"/></symbol>
+<symbol id="i-fit" viewBox="0 0 24 24"><path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"/></symbol>
+<symbol id="i-route" viewBox="0 0 24 24"><circle cx="6" cy="17" r="3"/><path d="M9 17h8a4 4 0 0 0 0-8H7a3 3 0 0 1 0-6h8m-3-3 3 3-3 3"/></symbol>
+<symbol id="i-flag" viewBox="0 0 24 24"><path d="M4 22V3m0 0c5-4 11 4 16 0v11c-5 4-11-4-16 0"/></symbol>
+<symbol id="i-cone" viewBox="0 0 24 24"><path d="M9.3 3a3 3 0 0 1 5.4 0L20 20H4L9.3 3ZM2 20h20M7 10h10M5.5 15h13"/></symbol>
+<symbol id="i-wall" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="1"/><path d="M3 9h18M3 15h18M9 3v6m6 0v6m-6 0v6"/></symbol>
+<symbol id="i-curb" viewBox="0 0 24 24"><path d="M3 8h18v8H3zM8 8v8m8-8v8"/></symbol>
+<symbol id="i-parking" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 17V7h4a3 3 0 0 1 0 6H9"/></symbol>
+<symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7m4-7v7"/></symbol>
+<symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6m0-10h.01"/></symbol>
+</defs></svg>
+<header class="app-header">
+  <div class="brand"><div class="brand-mark"><svg class="icon"><use href="#i-car"/></svg></div><div><h1>Clearance</h1><div class="eyebrow">DRIVING GEOMETRY LAB</div></div></div>
+  <div class="header-actions"><span class="header-note">A LITTLE SPACE. A BETTER SENSE OF IT.</span><button id="resetCar" title="Reset vehicle (R)"><svg><use href="#i-reset"/></svg><span>Reset vehicle</span></button></div>
+</header>
+<main id="app" class="workspace">
+  <section class="stage" aria-label="Driving simulation">
+    <div class="stage-toolbar">
+      <div class="scenario-select"><svg class="icon"><use href="#i-flag"/></svg><select id="exercise" aria-label="Driving exercise">
+        <option value="studio">00 / Steering studio</option><option value="straight">01 / Straight driving</option><option value="small">02 / Small steering</option><option value="left">03 / Full left turn</option><option value="right">04 / Full right turn</option><option value="narrow">05 / Narrow lane</option><option value="corner">06 / The 90-degree corner</option><option value="parking">07 / Parallel parking</option><option value="wall">08 / Close to a wall</option><option value="tracking">09 / Rear wheel tracking</option>
+      </select></div>
+      <button id="studyMode" class="mode-button" aria-pressed="true"><svg><use href="#i-route"/></svg>Where will my wheels go?</button>
+      <button id="trainingMode" class="mode-button" aria-pressed="false"><svg><use href="#i-flag"/></svg>Margin training</button>
+    </div>
+    <div class="scene" id="scene">
+      <canvas id="world" tabindex="0" aria-label="Top-down driving simulator. Drag the car or an obstacle to reposition it. Drag empty ground to pan. W and S drive, A and D steer, Space brakes, R resets."></canvas>
+      <div class="scene-info"><div class="scene-kicker"><span class="live-dot"></span><span id="modeCaption">PATH STUDY / PAUSED</span></div><h2 id="turnCaption">Turning left</h2><p id="sceneSubtitle">Rear-axle radius 8.31 m</p></div>
+      <div class="view-tools">
+        <button class="icon-button" id="zoomIn" title="Zoom in" aria-label="Zoom in"><svg><use href="#i-plus"/></svg></button>
+        <button class="icon-button" id="zoomOut" title="Zoom out" aria-label="Zoom out"><svg><use href="#i-minus"/></svg></button>
+        <button class="icon-button" id="resetView" title="Reset top-down view" aria-label="Reset top-down view"><svg><use href="#i-fit"/></svg></button>
+        <button class="icon-button" id="followCar" title="Follow car" aria-label="Follow car" aria-pressed="false"><svg><use href="#i-target"/></svg></button>
+      </div>
+      <pre id="debugReadout" hidden></pre>
+      <div class="scene-legend" id="legend"><div class="legend-item"><span class="swatch"></span>Front left</div><div class="legend-item"><span class="swatch dashed"></span>Front right</div><div class="legend-item"><span class="swatch rear"></span>Rear left</div><div class="legend-item"><span class="swatch rear dashed"></span>Rear right</div><div class="legend-item"><span class="swatch body"></span>Body corridor</div><div class="legend-item"><span class="swatch center"></span>Rear-axle center</div></div>
+      <div class="scene-scale"><div class="scale-line" id="scaleLine"></div><span id="scaleText">2 m</span></div>
+    </div>
+    <div class="telemetry">
+      <div class="telemetry-item"><span class="tiny-label">Speed</span><div class="telemetry-value"><span id="speedReadout">0.0</span> <small>km/h</small></div></div>
+      <div class="telemetry-item"><span class="tiny-label">Travel</span><div class="telemetry-value"><span id="travelReadout">0.0</span> <small>m</small></div></div>
+      <div class="telemetry-item"><span class="tiny-label">Direction</span><div class="telemetry-value" id="gearReadout">D <small>Forward</small></div></div>
+      <div class="status" id="status" role="status" aria-live="polite"><strong>Clear of obstacles</strong><span>Safety margin maintained</span></div>
+    </div>
+  </section>
+  <aside class="panel" aria-label="Simulator controls">
+    <div class="panel-tabs" role="tablist" aria-label="Control panels"><button role="tab" id="tab-drive" aria-controls="drivePanel" aria-selected="true" data-tab="drive">Drive</button><button role="tab" id="tab-setup" aria-controls="setupPanel" aria-selected="false" data-tab="setup">Vehicle &amp; view</button><button role="tab" id="tab-scene" aria-controls="scenePanel" aria-selected="false" data-tab="scene">Scene editor</button></div>
+    <div class="panel-scroll">
+      <section class="training-summary" id="trainingSummary"><div class="score-heading"><h3>Margin training</h3><span class="training-score" id="score">0</span></div><div class="score-event" id="scoreEvent">Course ready</div><button id="newCourse"><svg><use href="#i-reset"/></svg>New course</button><div class="score-rules"><span>Collision</span><span>-100</span><span>Safety margin violation</span><span>-20</span><span>Very close pass</span><span>-5</span><span>Clean pass</span><span>+10</span><span>Centered driving</span><span>+5</span></div></section>
+      <div id="drivePanel" class="tab-content active" role="tabpanel" aria-labelledby="tab-drive">
+        <section class="panel-section">
+          <div class="section-heading"><h3>Steering</h3><span class="pill" id="ratioPill">15:1 RATIO</span></div>
+          <div class="steering-layout"><div><div class="steering-dial"><canvas id="steeringWheel" width="302" height="302" aria-label="Steering wheel; drag to rotate. Steering input slider provides keyboard control."></canvas></div><div class="wheel-caption"><span id="wheelRotation">-270</span>&deg; at the wheel</div></div><div><div class="angle-large"><span id="roadAngle">-18</span>&deg;</div><div class="angle-direction" id="steeringDirection">LEFT / ROAD WHEELS</div><div class="steering-secondary"><strong id="radiusReadout">8.31 m</strong><span>REAR-AXLE RADIUS</span></div></div></div>
+          <label class="range-label" for="steering"><span>Steering input</span><output id="steeringOutput">-18&deg;</output></label><input id="steering" type="range" min="-45" max="45" value="-18" step="0.1" aria-label="Steering input in degrees"><div class="range-ticks"><span>LEFT -45&deg;</span><span>0&deg;</span><span>RIGHT +45&deg;</span></div>
+          <div class="steer-buttons"><button id="steerLeft" title="Steer left (A or Left arrow)" aria-label="Steer left"><svg><use href="#i-left"/></svg></button><button id="centerSteering" title="Center steering">Center</button><button id="steerRight" title="Steer right (D or Right arrow)" aria-label="Steer right"><svg><use href="#i-right"/></svg></button></div>
+          <div class="stat-grid"><div><strong id="innerAngle">19.7&deg;</strong><span>Inner wheel</span></div><div><strong id="outerAngle">16.6&deg;</strong><span>Outer wheel</span></div><div><strong id="diameter">16.62 m</strong><span>Turn diameter</span></div></div>
+        </section>
+        <section class="panel-section">
+          <div class="section-heading"><h3>Movement</h3><button id="pause" class="icon-button" title="Pause or resume movement" aria-label="Pause or resume movement" aria-pressed="true"><svg><use href="#i-pause"/></svg></button></div>
+          <div class="control-row"><div class="gear" role="group" aria-label="Direction"><button id="forwardGear" aria-pressed="true" title="Forward">D</button><button id="reverseGear" aria-pressed="false" title="Reverse">R</button></div><div class="pedals"><button id="forward" title="Accelerate forward (W or Up arrow)" aria-label="Accelerate forward"><svg><use href="#i-up"/></svg></button><button id="brake" class="brake" title="Brake (Space)" aria-label="Brake"><svg><use href="#i-pause"/></svg></button><button id="reverse" title="Brake or reverse (S or Down arrow)" aria-label="Brake or reverse"><svg><use href="#i-down"/></svg></button></div></div>
+          <label class="range-label" for="speedLimit"><span>Speed limit</span><output id="speedLimitOutput">6 km/h</output></label><input id="speedLimit" type="range" min="1" max="15" step="1" value="6">
+          <label class="range-label" for="projection"><span>Projection distance</span><output id="projectionOutput">8 m</output></label><input id="projection" type="range" min="1" max="20" value="8" step="0.5">
+        </section>
+        <section class="panel-section"><div class="section-heading"><h3>Body clearance</h3><span class="pill" id="marginPill">0.30 m MARGIN</span></div><div class="margin-grid"><div class="margin-cell"><span>Left</span><strong id="clear-left">Open</strong></div><div class="margin-cell"><span>Right</span><strong id="clear-right">Open</strong></div><div class="margin-cell"><span>Front</span><strong id="clear-front">Open</strong></div><div class="margin-cell"><span>Rear</span><strong id="clear-rear">Open</strong></div></div><label class="range-label" for="safety"><span>Safety margin</span><output id="safetyOutput">0.30 m</output></label><input id="safety" type="range" min="0.05" max="1" step="0.05" value="0.3"></section>
+        <section class="panel-section observation" id="education"><div class="section-heading"><h3>Rear wheel offtracking</h3><svg class="icon"><use href="#i-info"/></svg></div><p id="educationText"></p><p id="exerciseGoal"></p></section>
+      </div>
+      <div id="setupPanel" class="tab-content" role="tabpanel" aria-labelledby="tab-setup">
+        <section class="panel-section"><div class="section-heading"><h3>Vehicle dimensions</h3><span class="pill">METERS</span></div><select id="vehiclePreset" class="section-select" aria-label="Vehicle preset"><option value="small">Small car</option><option value="sedan" selected>Sedan</option><option value="suv">SUV</option><option value="custom">Custom</option></select><div class="form-grid">
+          <label class="field">Length<div class="input-unit"><input id="vehicleLength" type="number" min="2.8" max="7" step="0.01" value="4.5"><span>m</span></div></label><label class="field">Width<div class="input-unit"><input id="vehicleWidth" type="number" min="1.3" max="2.8" step="0.01" value="1.8"><span>m</span></div></label><label class="field">Wheelbase<div class="input-unit"><input id="vehicleWheelbase" type="number" min="1.6" max="4.5" step="0.01" value="2.7"><span>m</span></div></label><label class="field">Track width<div class="input-unit"><input id="vehicleTrack" type="number" min="0.8" max="2.5" step="0.01" value="1.55"><span>m</span></div></label><label class="field">Front overhang<div class="input-unit"><input id="frontOverhang" type="number" min="0.2" max="2" step="0.01" value="0.9"><span>m</span></div></label><label class="field">Rear overhang<div class="input-unit"><input id="rearOverhang" type="number" min="0.2" max="2" step="0.01" value="0.9"><span>m</span></div></label>
+        </div></section>
+        <section class="panel-section"><div class="section-heading"><h3>Steering response</h3></div><label class="field">Steering ratio<div class="input-unit"><input id="steeringRatio" type="number" min="5" max="25" step="0.5" value="15"><span>:1</span></div></label><label class="range-label" for="sensitivity"><span>Sensitivity</span><output id="sensitivityOutput">1.0&times;</output></label><input id="sensitivity" type="range" min="0.4" max="2" step="0.1" value="1"><div class="range-ticks"><span>LOW</span><span>NORMAL</span><span>HIGH</span></div><div class="check-row"><label><input id="autoCenter" type="checkbox">Auto-center steering</label></div><label class="range-label" for="returnSpeed"><span>Return speed</span><output id="returnSpeedOutput">5&deg;/s</output></label><input id="returnSpeed" type="range" min="1" max="40" value="5"></section>
+        <section class="panel-section"><div class="section-heading"><h3>Layers &amp; geometry</h3></div><div id="layerControls"></div><label class="range-label" for="gridSize"><span>Grid spacing</span></label><select id="gridSize" class="section-select"><option value="0.5">0.5 m</option><option value="1" selected>1 m</option><option value="2">2 m</option></select></section>
+        <section class="panel-section"><div class="section-heading"><h3>Vehicle position</h3></div><div class="form-grid"><label class="field">Rear axle X<div class="input-unit"><input id="positionX" type="number" value="0" step="0.1"><span>m</span></div></label><label class="field">Rear axle Y<div class="input-unit"><input id="positionY" type="number" value="0" step="0.1"><span>m</span></div></label><label class="field full">Heading<div class="input-unit"><input id="heading" type="number" min="-360" max="360" value="90" step="5"><span>&deg;</span></div></label></div></section>
+      </div>
+      <div id="scenePanel" class="tab-content" role="tabpanel" aria-labelledby="tab-scene">
+        <section class="panel-section"><div class="section-heading"><h3>Add an object</h3><span class="pill" id="objectCount">0 OBJECTS</span></div><div class="add-grid"><button data-add="cone"><svg><use href="#i-cone"/></svg>Cone</button><button data-add="wall"><svg><use href="#i-wall"/></svg>Wall</button><button data-add="car"><svg><use href="#i-car"/></svg>Vehicle</button><button data-add="curb"><svg><use href="#i-curb"/></svg>Curb</button><button data-add="parking" class="full"><svg><use href="#i-parking"/></svg>Parking space</button></div><div id="objectList" class="object-list"></div></section>
+        <section class="panel-section" id="objectProperties" hidden><div class="section-heading"><h3 id="selectedName">Selected object</h3><button id="deleteObject" class="icon-button" title="Delete selected object" aria-label="Delete selected object"><svg><use href="#i-trash"/></svg></button></div><div class="form-grid"><label class="field">X<div class="input-unit"><input id="objectX" type="number" step="0.1"><span>m</span></div></label><label class="field">Y<div class="input-unit"><input id="objectY" type="number" step="0.1"><span>m</span></div></label><label class="field">Length<div class="input-unit"><input id="objectLength" type="number" min="0.2" max="40" step="0.1"><span>m</span></div></label><label class="field">Width / diameter<div class="input-unit"><input id="objectWidth" type="number" min="0.1" max="10" step="0.1"><span>m</span></div></label><label class="field full">Rotation<div class="input-unit"><input id="objectHeading" type="number" min="-360" max="360" step="15"><span>&deg;</span></div></label></div></section>
+        <section class="panel-section"><div class="section-heading"><h3>Scenario</h3></div><label class="field">Close-wall target<select id="wallTarget"><option value="0.3">30 cm</option><option value="0.5" selected>50 cm</option><option value="1">1 meter</option></select></label><div class="button-row"><button id="resetScenario"><svg><use href="#i-reset"/></svg>Reset scene</button><button id="clearObjects"><svg><use href="#i-trash"/></svg>Clear objects</button></div></section>
+      </div>
+    </div>
+  </aside>
+</main>
+<footer class="app-footer"><span><strong>Educational simulator only.</strong> Simplified vehicle dynamics. Not a substitute for supervised real-world driving instruction.</span><span>LOW-SPEED BICYCLE MODEL &nbsp; / &nbsp; TOP-DOWN VIEW</span></footer>
+<script>
+'use strict';
+const Geometry = (() => {
+  const DEG = Math.PI / 180;
+  const EPS = 1e-8;
+  const clamp = (value, minimum, maximum) => Math.max(minimum, Math.min(maximum, value));
+  const distance = (first, second) => Math.hypot(first.x - second.x, first.y - second.y);
+  const dot = (first, second) => first.x * second.x + first.y * second.y;
+  const subtract = (first, second) => ({ x: first.x - second.x, y: first.y - second.y });
+
+  // World X points right and world Y points up; heading is counterclockwise from world X.
+  // Vehicle-local X points forward and local Y points left. The origin is the rear axle midpoint.
+  // The control uses negative degrees for left; convert to positive-left mathematical angles here.
+  function transform(pose, point) {
+    const cosine = Math.cos(pose.heading);
+    const sine = Math.sin(pose.heading);
+    return { x: pose.x + point.x * cosine - point.y * sine, y: pose.y + point.x * sine + point.y * cosine };
+  }
+  function local(pose, point) {
+    const offset = subtract(point, pose);
+    const cosine = Math.cos(pose.heading);
+    const sine = Math.sin(pose.heading);
+    return { x: offset.x * cosine + offset.y * sine, y: -offset.x * sine + offset.y * cosine };
+  }
+  function radius(vehicle, steering) {
+    return Math.abs(steering) < 0.00001 ? Infinity : vehicle.wheelbase / Math.tan(-steering * DEG);
+  }
+  function icc(pose, vehicle, steering) {
+    const turningRadius = radius(vehicle, steering);
+    return Number.isFinite(turningRadius) ? transform(pose, { x: 0, y: turningRadius }) : null;
+  }
+  function advance(pose, travel, vehicle, steering) {
+    const turningRadius = radius(vehicle, steering);
+    if (!Number.isFinite(turningRadius)) {
+      return { x: pose.x + travel * Math.cos(pose.heading), y: pose.y + travel * Math.sin(pose.heading), heading: pose.heading };
+    }
+    const heading = pose.heading + travel / turningRadius;
+    return {
+      x: pose.x + turningRadius * (Math.sin(heading) - Math.sin(pose.heading)),
+      y: pose.y - turningRadius * (Math.cos(heading) - Math.cos(pose.heading)),
+      heading
+    };
+  }
+  function ackermann(vehicle, steering) {
+    const turningRadius = radius(vehicle, steering);
+    if (!Number.isFinite(turningRadius)) return { left: 0, right: 0, inner: 0, outer: 0 };
+    const left = -Math.atan(vehicle.wheelbase / (turningRadius - vehicle.trackWidth / 2)) / DEG;
+    const right = -Math.atan(vehicle.wheelbase / (turningRadius + vehicle.trackWidth / 2)) / DEG;
+    return { left, right, inner: steering < 0 ? left : right, outer: steering < 0 ? right : left };
+  }
+  function wheelLocals(vehicle) {
+    return [
+      { x: vehicle.wheelbase, y: vehicle.trackWidth / 2, name: 'Front left', key: 'FL' },
+      { x: vehicle.wheelbase, y: -vehicle.trackWidth / 2, name: 'Front right', key: 'FR' },
+      { x: 0, y: vehicle.trackWidth / 2, name: 'Rear left', key: 'RL' },
+      { x: 0, y: -vehicle.trackWidth / 2, name: 'Rear right', key: 'RR' }
+    ];
+  }
+  function rectangle(pose, back, front, halfWidth) {
+    return [{ x: back, y: halfWidth }, { x: back, y: -halfWidth }, { x: front, y: -halfWidth }, { x: front, y: halfWidth }].map(point => transform(pose, point));
+  }
+  function body(pose, vehicle, margin = 0) {
+    return rectangle(pose, -vehicle.rearOverhang - margin, vehicle.wheelbase + vehicle.frontOverhang + margin, vehicle.width / 2 + margin);
+  }
+  function wheels(pose, vehicle, steering) {
+    const angles = ackermann(vehicle, steering);
+    return wheelLocals(vehicle).map((point, index) => {
+      const center = transform(pose, point);
+      const angle = index === 0 ? angles.left : index === 1 ? angles.right : 0;
+      const wheelPose = { ...center, heading: pose.heading - angle * DEG };
+      return { ...center, name: point.name, key: point.key, angle, heading: wheelPose.heading, polygon: rectangle(wheelPose, -0.32, 0.32, 0.11) };
+    });
+  }
+  function obstaclePolygon(obstacle) {
+    if (obstacle.type === 'cone') {
+      return Array.from({ length: 20 }, (_, index) => {
+        const angle = index * Math.PI / 10;
+        return { x: obstacle.x + Math.cos(angle) * obstacle.width / 2, y: obstacle.y + Math.sin(angle) * obstacle.width / 2 };
+      });
+    }
+    return rectangle(obstacle, -obstacle.length / 2, obstacle.length / 2, obstacle.width / 2);
+  }
+  function intersects(first, second) {
+    for (const polygon of [first, second]) {
+      for (let index = 0; index < polygon.length; index++) {
+        const next = polygon[(index + 1) % polygon.length];
+        const axis = { x: -(next.y - polygon[index].y), y: next.x - polygon[index].x };
+        let firstMin = Infinity, firstMax = -Infinity, secondMin = Infinity, secondMax = -Infinity;
+        for (const point of first) { const value = dot(point, axis); firstMin = Math.min(firstMin, value); firstMax = Math.max(firstMax, value); }
+        for (const point of second) { const value = dot(point, axis); secondMin = Math.min(secondMin, value); secondMax = Math.max(secondMax, value); }
+        if (firstMax < secondMin - EPS || secondMax < firstMin - EPS) return false;
+      }
+    }
+    return true;
+  }
+  function contains(polygon, point) {
+    let sign = 0;
+    for (let index = 0; index < polygon.length; index++) {
+      const start = polygon[index], end = polygon[(index + 1) % polygon.length];
+      const cross = (end.x - start.x) * (point.y - start.y) - (end.y - start.y) * (point.x - start.x);
+      if (Math.abs(cross) < EPS) continue;
+      if (sign && Math.sign(cross) !== sign) return false;
+      sign = Math.sign(cross);
+    }
+    return true;
+  }
+  function closestOnSegment(point, start, end) {
+    const delta = subtract(end, start);
+    const denominator = dot(delta, delta);
+    const fraction = denominator < EPS ? 0 : clamp(dot(subtract(point, start), delta) / denominator, 0, 1);
+    return { x: start.x + fraction * delta.x, y: start.y + fraction * delta.y };
+  }
+  function segmentDistance(firstStart, firstEnd, secondStart, secondEnd) {
+    const firstDelta = subtract(firstEnd, firstStart), secondDelta = subtract(secondEnd, secondStart);
+    const denominator = firstDelta.x * secondDelta.y - firstDelta.y * secondDelta.x;
+    const offset = subtract(secondStart, firstStart);
+    if (Math.abs(denominator) > EPS) {
+      const alongFirst = (offset.x * secondDelta.y - offset.y * secondDelta.x) / denominator;
+      const alongSecond = (offset.x * firstDelta.y - offset.y * firstDelta.x) / denominator;
+      if (alongFirst >= 0 && alongFirst <= 1 && alongSecond >= 0 && alongSecond <= 1) {
+        const point = { x: firstStart.x + alongFirst * firstDelta.x, y: firstStart.y + alongFirst * firstDelta.y };
+        return { distance: 0, from: point, to: point };
+      }
+    }
+    const pairs = [
+      [firstStart, closestOnSegment(firstStart, secondStart, secondEnd)],
+      [firstEnd, closestOnSegment(firstEnd, secondStart, secondEnd)],
+      [closestOnSegment(secondStart, firstStart, firstEnd), secondStart],
+      [closestOnSegment(secondEnd, firstStart, firstEnd), secondEnd]
+    ];
+    let result = { distance: Infinity };
+    for (const [from, to] of pairs) {
+      const separation = distance(from, to);
+      if (separation < result.distance) result = { distance: separation, from, to };
+    }
+    return result;
+  }
+  function polygonDistance(first, second) {
+    let result = { distance: Infinity };
+    for (let firstIndex = 0; firstIndex < first.length; firstIndex++) {
+      for (let secondIndex = 0; secondIndex < second.length; secondIndex++) {
+        const candidate = segmentDistance(first[firstIndex], first[(firstIndex + 1) % first.length], second[secondIndex], second[(secondIndex + 1) % second.length]);
+        if (candidate.distance < result.distance) result = candidate;
+      }
+    }
+    if (intersects(first, second)) result.distance = 0;
+    return result;
+  }
+  function clearances(pose, vehicle, obstacles) {
+    const polygon = body(pose, vehicle);
+    function clip(points, axis, edge, sign) {
+      const result = [];
+      if (!points.length) return result;
+      let previous = points[points.length - 1];
+      let previousInside = (previous[axis] - edge) * sign >= -EPS;
+      for (const point of points) {
+        const inside = (point[axis] - edge) * sign >= -EPS;
+        if (inside !== previousInside) {
+          const fraction = (edge - previous[axis]) / (point[axis] - previous[axis]);
+          result.push({ x: previous.x + fraction * (point.x - previous.x), y: previous.y + fraction * (point.y - previous.y) });
+        }
+        if (inside) result.push(point);
+        previous = point; previousInside = inside;
+      }
+      return result;
+    }
+    const sides = [
+      { key: 'left', axis: 'y', tangent: 'x', minimum: -vehicle.rearOverhang, maximum: vehicle.wheelbase + vehicle.frontOverhang, edge: vehicle.width / 2, sign: 1 },
+      { key: 'right', axis: 'y', tangent: 'x', minimum: -vehicle.rearOverhang, maximum: vehicle.wheelbase + vehicle.frontOverhang, edge: -vehicle.width / 2, sign: -1 },
+      { key: 'front', axis: 'x', tangent: 'y', minimum: -vehicle.width / 2, maximum: vehicle.width / 2, edge: vehicle.wheelbase + vehicle.frontOverhang, sign: 1 },
+      { key: 'rear', axis: 'x', tangent: 'y', minimum: -vehicle.width / 2, maximum: vehicle.width / 2, edge: -vehicle.rearOverhang, sign: -1 }
+    ];
+    const result = {};
+    for (const side of sides) {
+      result[side.key] = { distance: Infinity };
+      for (const obstacle of obstacles) {
+        if (obstacle.type === 'parking') continue;
+        const outline = obstacle.polygon || obstaclePolygon(obstacle);
+        if (intersects(polygon, outline)) {
+          result[side.key] = { ...polygonDistance(polygon, outline), distance: 0, obstacle };
+          continue;
+        }
+        let clipped = outline.map(point => local(pose, point));
+        clipped = clip(clipped, side.tangent, side.minimum, 1);
+        clipped = clip(clipped, side.tangent, side.maximum, -1);
+        clipped = clip(clipped, side.axis, side.edge, side.sign);
+        for (const point of clipped) {
+          const separation = Math.max(0, (point[side.axis] - side.edge) * side.sign);
+          if (separation < result[side.key].distance) {
+            const from = { ...point, [side.axis]: side.edge };
+            result[side.key] = { distance: separation, from: transform(pose, from), to: transform(pose, point), obstacle };
+          }
+        }
+      }
+    }
+    return result;
+  }
+  function project(pose, vehicle, steering, length, direction = 1) {
+    const count = Math.max(2, Math.ceil(length / 0.12));
+    const points = wheelLocals(vehicle);
+    const paths = points.map(point => ({ name: point.name, key: point.key, points: [] }));
+    const poses = [], bodies = [], center = [], corners = [[], [], [], []];
+    for (let index = 0; index <= count; index++) {
+      const next = advance(pose, direction * length * index / count, vehicle, steering);
+      const outline = body(next, vehicle);
+      poses.push(next); bodies.push(outline); center.push({ x: next.x, y: next.y });
+      points.forEach((point, wheelIndex) => paths[wheelIndex].points.push(transform(next, point)));
+      outline.forEach((point, cornerIndex) => corners[cornerIndex].push(point));
+    }
+    return { paths, poses, bodies, center, corners, icc: icc(pose, vehicle, steering), radius: radius(vehicle, steering), length, direction };
+  }
+  return { DEG, clamp, distance, dot, subtract, transform, local, radius, icc, advance, ackermann, wheelLocals, rectangle, body, wheels, obstaclePolygon, intersects, contains, closestOnSegment, segmentDistance, polygonDistance, clearances, project };
+})();
+</script>
+<script>
+'use strict';
+const Simulator = (() => {
+  const geometry = Geometry;
+  const element = id => document.getElementById(id);
+  const canvas = element('world');
+  const context = canvas.getContext('2d');
+  const dial = element('steeringWheel');
+  const dialContext = dial.getContext('2d');
+  const presets = {
+    small: { length:3.7, width:1.65, wheelbase:2.4, trackWidth:1.4, frontOverhang:0.65, rearOverhang:0.65 },
+    sedan: { length:4.5, width:1.8, wheelbase:2.7, trackWidth:1.55, frontOverhang:0.9, rearOverhang:0.9 },
+    suv: { length:4.9, width:2, wheelbase:2.9, trackWidth:1.7, frontOverhang:1, rearOverhang:1 }
+  };
+  const vehicle = { ...presets.sedan, x:0, y:0, heading:Math.PI / 2, speed:0 };
+  const settings = { ratio:15, sensitivity:1, autoCenter:false, returnSpeed:5, speedLimit:6, projection:8, safety:0.3, gridSize:1 };
+  const layers = { grid:true, measurements:true, paths:true, circle:true, safety:true, bounding:false, offtracking:true, education:true, debug:false };
+  const layerLabels = { grid:'Measurement grid', measurements:'Clearance measurements', paths:'Wheel paths & body corridor', circle:'Turning circle', safety:'Safety margin', bounding:'Vehicle bounding box', offtracking:'Rear wheel offtracking', education:'Educational observations', debug:'Developer / geometry debug' };
+  const state = {
+    input:-18, gear:1, study:true, paused:true, follow:false, dirty:true, geometryDirty:true,
+    travel:0, obstacles:[], roads:[], markings:[], scenario:'studio', selected:null, nextId:1,
+    snapshot:null, start:null, projection:null, clearances:null, nearest:[], currentCollision:null,
+    predictedCollision:null, contact:null, training:false, score:0, scoreEvent:'Course ready',
+    scored:new Set(), collisions:new Set(), warnings:new Set(), passes:new Map(), checkpoints:[], laneWidth:4,
+    completed:false, drag:null, wheelDrag:null, sliderHeld:false
+  };
+  const camera = { x:-3, y:4.2, scale:34 };
+  const viewport = { width:1, height:1, dpr:1 };
+  const keys = new Set();
+  const held = new Set();
+  const pathColors = ['#138c99','#138c99','#c68326','#c68326'];
+  const typeNames = { cone:'Cone', wall:'Wall', car:'Parked vehicle', curb:'Curb', parking:'Parking space' };
+  const goals = {
+    studio:'The entire body needs room, including the front overhang and the inside rear wheel.',
+    straight:'Goal: keep equal left and right clearance between the lane boundaries.',
+    small:'Compare 5, 10 and 20 degrees of steering. A smaller radius produces a tighter turn.',
+    left:'Goal: observe the inner and outer wheel paths at full left lock.',
+    right:'Goal: compare a full right turn with its mirror-image left turn.',
+    narrow:'Goal: maintain the safety margin on both sides of the narrow lane.',
+    corner:'Goal: complete the left turn without the inside rear wheel crossing the curb.',
+    parking:'Goal: reverse into the marked space between the two parked vehicles.',
+    wall:'Goal: hold the selected body clearance while driving parallel to the wall.',
+    tracking:'The inside rear wheel cuts farther inward than the front wheel near the cone.',
+    training:'Goal: pass all four cone gates with clearance on both sides.'
+  };
+
+  const steering = () => geometry.clamp(state.input * settings.sensitivity, -45, 45);
+  const direction = () => Math.abs(vehicle.speed) > 0.01 ? Math.sign(vehicle.speed) : state.gear;
+  function invalidate(geometry = true) { state.dirty = true; if (geometry) state.geometryDirty = true; }
+  function write(id, value) { const target = element(id); if (target.textContent !== String(value)) target.textContent = value; }
+  function number(id, value) { if (document.activeElement !== element(id)) element(id).value = value; }
+  function numericInput(id, fallback, minimum, maximum) {
+    const input = element(id);
+    return input.value.trim() && Number.isFinite(input.valueAsNumber) ? geometry.clamp(input.valueAsNumber, minimum, maximum) : fallback;
+  }
+  function fmt(value, digits = 2) { return Number.isFinite(value) ? value.toFixed(digits) : 'Open'; }
+  function setInput(value) { state.input = geometry.clamp(value, -45, 45); element('steering').value = state.input; invalidate(); }
+  function refreshObstacles() {
+    for (const obstacle of state.obstacles) {
+      obstacle.polygon = geometry.obstaclePolygon(obstacle);
+      obstacle.radius = obstacle.type === 'cone' ? obstacle.width / 2 : Math.hypot(obstacle.length, obstacle.width) / 2;
+    }
+    invalidate();
+  }
+  function addObstacle(type, x, y, length, width, heading = Math.PI / 2) {
+    const obstacle = { id:state.nextId++, type, x, y, length, width, heading };
+    state.obstacles.push(obstacle);
+    return obstacle;
+  }
+  function road(points) { state.roads.push(points); }
+  function roadRectangle(left, bottom, right, top) { road([{x:left,y:bottom},{x:right,y:bottom},{x:right,y:top},{x:left,y:top}]); }
+  function marking(from, to, dashed = false, color = '#ffffff', width = 0.045) { state.markings.push({ from, to, dashed, color, width }); }
+  function clearScore() {
+    state.score = 0; state.scoreEvent = 'Course ready'; state.completed = false;
+    state.scored.clear(); state.collisions.clear(); state.warnings.clear(); state.passes.clear();
+    for (const checkpoint of state.checkpoints) checkpoint.done = false;
+  }
+  function leaveTraining() { state.training = false; element('trainingSummary').classList.remove('active'); invalidate(false); }
+  function buildScenario(name) {
+    state.scenario = name;
+    state.obstacles = []; state.roads = []; state.markings = []; state.nextId = 1; state.selected = null; state.checkpoints = [];
+    Object.assign(vehicle, { x:0, y:0, heading:Math.PI / 2, speed:0 });
+    state.input = 0; state.gear = 1; state.travel = 0; state.contact = null;
+    state.training = name === 'training'; state.follow = state.training;
+    state.study = ['studio','small','left','right','tracking'].includes(name); state.paused = state.study;
+    if (state.study) setStudy(true);
+    if (name === 'studio' || name === 'small') {
+      roadRectangle(-12,-6,6,18);
+      for (const horizontal of [-5,16]) marking({x:-10,y:horizontal},{x:4.2,y:horizontal});
+      marking({x:1.9,y:-5},{x:1.9,y:15},true,'#ffffffa0');
+      addObstacle('wall',4.55,3,13,0.35);
+      addObstacle('cone',-1,7.7,0.48,0.48);
+      addObstacle('cone',-7.8,9.4,0.48,0.48);
+      addObstacle('cone',-8,-0.8,0.48,0.48);
+      addObstacle('parking',3,12,5.4,2.3);
+      addObstacle('car',3,12,4.5,1.8);
+      state.input = name === 'studio' ? -18 : -5;
+    } else if (name === 'straight' || name === 'narrow' || name === 'wall') {
+      const laneWidth = name === 'narrow' ? 2.7 : 4;
+      roadRectangle(-laneWidth / 2,-6,laneWidth / 2,28);
+      if (name === 'wall') {
+        const target = Number(element('wallTarget').value);
+        roadRectangle(-3,-6,4,28);
+        addObstacle('wall',-(vehicle.width / 2 + target + 0.2),10,32,0.4);
+        marking({x:2.5,y:-6},{x:2.5,y:27},true);
+      } else {
+        addObstacle('curb',-laneWidth / 2 - 0.12,10,32,0.24);
+        addObstacle('curb',laneWidth / 2 + 0.12,10,32,0.24);
+        marking({x:0,y:-5},{x:0,y:27},true,'#ffffff80',0.035);
+        if (name === 'straight') for (const height of [6,13,20]) {
+          addObstacle('cone',-2.25,height,0.45,0.45); addObstacle('cone',2.25,height,0.45,0.45);
+        }
+      }
+    } else if (name === 'left' || name === 'right' || name === 'tracking') {
+      roadRectangle(-11,-7,11,15);
+      state.input = name === 'left' ? -45 : name === 'right' ? 45 : -28;
+      const turningRadius = Math.abs(geometry.radius(vehicle,state.input));
+      const side = name === 'right' ? 1 : -1;
+      addObstacle('cone',side * turningRadius,0,0.55,0.55);
+      if (name === 'tracking') addObstacle('cone',-4.15,3.8,0.5,0.5);
+      marking({x:-9,y:-5},{x:9,y:-5});
+    } else if (name === 'corner') {
+      vehicle.y = -2;
+      road([{x:-2.1,y:-7},{x:2.1,y:-7},{x:2.1,y:10},{x:-12,y:10},{x:-12,y:5.2},{x:-2.1,y:5.2}]);
+      addObstacle('wall',2.32,1.5,17,0.4);
+      addObstacle('wall',-4.95,10.22,14.5,0.4,0);
+      addObstacle('curb',-2.25,-1,12,0.3);
+      addObstacle('curb',-7.2,5.05,10.2,0.3,0);
+      marking({x:0,y:-6},{x:0,y:5},true);
+      marking({x:-3,y:7.6},{x:-11,y:7.6},true);
+    } else if (name === 'parking') {
+      vehicle.y = 7;
+      roadRectangle(-4,-7,4.7,23);
+      addObstacle('wall',4.65,8,30,0.3);
+      addObstacle('parking',3,6.5,6,2.3);
+      addObstacle('car',3,0.9,4.5,1.8);
+      addObstacle('car',3,12.1,4.5,1.8);
+      marking({x:1.8,y:-6},{x:1.8,y:21},true);
+      state.gear = -1; state.input = 20;
+    } else if (name === 'training') {
+      state.laneWidth = Math.max(3.6,vehicle.width+2*settings.safety+1.8) + Math.random() * 1.2;
+      const half = state.laneWidth / 2;
+      roadRectangle(-half,-6,half,37);
+      addObstacle('wall',-half-0.15,15.5,43,0.3);
+      addObstacle('curb',half+0.15,15.5,43,0.3);
+      marking({x:0,y:-5},{x:0,y:35},true,'#ffffff70');
+      for (const height of [6,13,20,27]) {
+        const shift = (Math.random() - 0.5) * 0.35;
+        addObstacle('cone',-half+0.42+shift,height,0.42,0.42);
+        addObstacle('cone',half-0.42+shift,height,0.42,0.42);
+        state.checkpoints.push({y:height, x:shift, done:false});
+      }
+      const bayY = 10 + Math.random() * 6;
+      addObstacle('parking',half+2,bayY,6,2.4);
+      addObstacle('car',half+2,bayY,4.5,1.8);
+      for (let stripe = 0; stripe < 8; stripe++) {
+        const stripeWidth = state.laneWidth / 8;
+        marking({x:-half+stripe*stripeWidth,y:34},{x:-half+(stripe+1)*stripeWidth,y:34},false,stripe%2 ? '#687b70' : '#ffffff',0.45);
+      }
+      state.follow = true;
+    }
+    clearScore();
+    state.start = { x:vehicle.x, y:vehicle.y, heading:vehicle.heading, input:state.input, gear:state.gear };
+    refreshObstacles();
+    state.snapshot = JSON.parse(JSON.stringify({ obstacles:state.obstacles, roads:state.roads, markings:state.markings, checkpoints:state.checkpoints, start:state.start }));
+    if (name !== 'training') element('exercise').value = name;
+    element('steering').value = state.input;
+    resetView(); renderObjectList(); updateSelectedFields();
+    invalidate();
+  }
+  function resetVehicle() {
+    const start = state.start;
+    Object.assign(vehicle,{x:start.x,y:start.y,heading:start.heading,speed:0});
+    state.input = start.input; state.gear = start.gear; state.travel = 0; state.contact = null;
+    keys.clear(); held.clear(); clearScore(); element('steering').value = state.input;
+    resetView(); invalidate();
+  }
+  function resetScenario() {
+    const snapshot = JSON.parse(JSON.stringify(state.snapshot));
+    state.obstacles = snapshot.obstacles; state.roads = snapshot.roads; state.markings = snapshot.markings; state.checkpoints = snapshot.checkpoints; state.start = snapshot.start;
+    state.nextId = Math.max(0,...state.obstacles.map(obstacle=>obstacle.id))+1;
+    state.selected = null; refreshObstacles(); resetVehicle(); renderObjectList(); updateSelectedFields();
+  }
+  function resetView() {
+    camera.scale = geometry.clamp(Math.min(viewport.width / 24,viewport.height / 20),15,43);
+    camera.x = vehicle.x + (steering() > 1 ? 2.5 : -3);
+    camera.y = vehicle.y + 4.2;
+    if (viewport.width < 550) { camera.x = vehicle.x + (steering() > 1 ? 1.5 : -1.5); camera.scale = Math.max(17,viewport.width / 18); }
+    invalidate(false);
+  }
+  function setStudy(enabled) {
+    state.study = enabled; state.paused = enabled; vehicle.speed = 0;
+    if (enabled) {
+      settings.projection = geometry.clamp(settings.projection,5,10);
+      layers.paths = true; layers.circle = true;
+      element('layer-paths').checked = true; element('layer-circle').checked = true;
+    }
+    element('projection').value = settings.projection;
+    invalidate();
+  }
+  function engageDrive() { state.study = false; state.paused = false; invalidate(false); }
+  function setGear(gear) { vehicle.speed = 0; state.gear = gear; invalidate(); }
+
+  function collisionAt(pose) {
+    const body = geometry.body(pose,vehicle);
+    let wheelPolygons = null;
+    for (const obstacle of state.obstacles) {
+      if (obstacle.type === 'parking' || geometry.distance(pose,obstacle) > vehicle.length + obstacle.radius + 0.4) continue;
+      if (geometry.intersects(body,obstacle.polygon)) {
+        const pair = geometry.polygonDistance(body,obstacle.polygon);
+        const point = pair.from || pose;
+        const localPoint = geometry.local(pose,point);
+        const label = (localPoint.x > vehicle.wheelbase / 2 ? 'Front' : 'Rear') + (localPoint.y >= 0 ? '-left' : '-right') + ' body';
+        return { obstacle, point, label };
+      }
+      if (!wheelPolygons) wheelPolygons = geometry.wheels(pose,vehicle,steering());
+      for (const wheel of wheelPolygons) {
+        if (geometry.intersects(wheel.polygon,obstacle.polygon)) return { obstacle, point:{x:wheel.x,y:wheel.y}, label:wheel.name+' wheel' };
+      }
+    }
+    return null;
+  }
+  function updateGeometry() {
+    state.projection = geometry.project(vehicle,vehicle,steering(),settings.projection,direction());
+    state.clearances = geometry.clearances(vehicle,vehicle,state.obstacles);
+    const body = geometry.body(vehicle,vehicle);
+    const wheels = geometry.wheels(vehicle,vehicle,steering());
+    state.nearest = state.obstacles.filter(obstacle=>obstacle.type !== 'parking').map(obstacle => {
+      let pair = geometry.polygonDistance(body,obstacle.polygon);
+      for (const wheel of wheels) {
+        const candidate = geometry.polygonDistance(wheel.polygon,obstacle.polygon);
+        if (candidate.distance < pair.distance) pair = candidate;
+      }
+      return { ...pair, obstacle };
+    });
+    state.currentCollision = collisionAt(vehicle);
+    state.predictedCollision = null;
+    if (layers.paths || state.study) {
+      const projection = state.projection;
+      for (let index = 0; index < projection.poses.length; index++) {
+        const hit = collisionAt(projection.poses[index]);
+        if (hit) { state.predictedCollision = { ...hit, pose:projection.poses[index], distance:settings.projection * index / (projection.poses.length-1) }; break; }
+      }
+    }
+    state.geometryDirty = false;
+  }
+  function award(points, message) { state.score += points; state.scoreEvent = (points > 0 ? '+' : '')+points+' / '+message; invalidate(false); }
+  function registerCollision(hit) {
+    state.contact = { ...hit, until:performance.now()+1800 };
+    if (state.training && !state.collisions.has(hit.obstacle.id)) {
+      state.collisions.add(hit.obstacle.id); award(-100,'Collision');
+    }
+  }
+  function updateTraining() {
+    if (!state.training || state.completed) return;
+    for (const item of state.nearest) {
+      const id = item.obstacle.id;
+      if (item.distance < settings.safety && !state.warnings.has(id)) {
+        state.warnings.add(id); award(-20,'Safety margin violated');
+      }
+      if (item.distance > settings.safety+0.5) { state.warnings.delete(id); state.collisions.delete(id); }
+      if (item.obstacle.type === 'cone') {
+        const previous = state.passes.get(id) ?? Infinity;
+        state.passes.set(id,Math.min(previous,item.distance));
+        if (vehicle.y-vehicle.rearOverhang > item.obstacle.y+item.obstacle.width/2 && !state.scored.has(id)) {
+          state.scored.add(id);
+          const gap = state.passes.get(id);
+          if (gap >= settings.safety+0.2) award(10,'Clean pass');
+          else if (gap >= settings.safety) award(-5,'Very close pass');
+        }
+      }
+    }
+    for (const checkpoint of state.checkpoints) {
+      if (!checkpoint.done && vehicle.y > checkpoint.y) {
+        checkpoint.done = true;
+        if (Math.abs(vehicle.x-checkpoint.x) < state.laneWidth*0.12) award(5,'Centered driving');
+      }
+    }
+    if (vehicle.y-vehicle.rearOverhang > 34) {
+      state.completed = true; vehicle.speed = 0; state.paused = true; state.scoreEvent = 'Course complete'; invalidate(false);
+    }
+  }
+  function pressed(...codes) { return codes.some(code=>keys.has(code)||held.has(code)); }
+  function approachZero(value, amount) { return Math.sign(value)*Math.max(0,Math.abs(value)-amount); }
+  function updateVehiclePhysics(elapsed) {
+    const steeringInput = (pressed('KeyD','ArrowRight','right') ? 1 : 0) - (pressed('KeyA','ArrowLeft','left') ? 1 : 0);
+    if (steeringInput) setInput(state.input+steeringInput*25*elapsed);
+    else if (settings.autoCenter && !state.sliderHeld && !state.wheelDrag && Math.abs(state.input)>0) setInput(approachZero(state.input,settings.returnSpeed*elapsed/settings.sensitivity));
+    if (state.paused || state.study || state.drag) { vehicle.speed = 0; return; }
+    const throttle = (pressed('KeyW','ArrowUp','forward') ? 1 : 0) - (pressed('KeyS','ArrowDown','reverse') ? 1 : 0);
+    if (pressed('Space','brake')) vehicle.speed = approachZero(vehicle.speed,6*elapsed);
+    else if (throttle) {
+      if (vehicle.speed*throttle < 0) vehicle.speed = approachZero(vehicle.speed,3.5*elapsed);
+      else { vehicle.speed = geometry.clamp(vehicle.speed+throttle*1.3*elapsed,-settings.speedLimit/3.6,settings.speedLimit/3.6); state.gear = throttle; }
+    } else vehicle.speed = approachZero(vehicle.speed,0.65*elapsed);
+    const travel = vehicle.speed*elapsed;
+    if (Math.abs(travel)<0.000001) return;
+    const steps = Math.max(1,Math.ceil(Math.abs(travel)/0.04));
+    for (let index = 0; index < steps; index++) {
+      const next = geometry.advance(vehicle,travel/steps,vehicle,steering());
+      const hit = collisionAt(next);
+      if (hit) { registerCollision(hit); vehicle.speed = 0; break; }
+      Object.assign(vehicle,next); state.travel += Math.abs(travel/steps);
+    }
+    vehicle.heading = Math.atan2(Math.sin(vehicle.heading),Math.cos(vehicle.heading));
+    invalidate();
+  }
+
+  function screen(point) { return { x:viewport.width/2+(point.x-camera.x)*camera.scale, y:viewport.height/2-(point.y-camera.y)*camera.scale }; }
+  function worldPoint(point) { return { x:camera.x+(point.x-viewport.width/2)/camera.scale, y:camera.y-(point.y-viewport.height/2)/camera.scale }; }
+  function pointerPoint(event) { const bounds = canvas.getBoundingClientRect(); return {x:event.clientX-bounds.left,y:event.clientY-bounds.top}; }
+  function screenTransform() { context.setTransform(viewport.dpr,0,0,viewport.dpr,0,0); }
+  function worldTransform() { context.setTransform(viewport.dpr*camera.scale,0,0,-viewport.dpr*camera.scale,viewport.dpr*(viewport.width/2-camera.x*camera.scale),viewport.dpr*(viewport.height/2+camera.y*camera.scale)); }
+  function polygonPath(points, close = true) { if (!points.length) return; context.moveTo(points[0].x,points[0].y); for (let index=1;index<points.length;index++) context.lineTo(points[index].x,points[index].y); if(close) context.closePath(); }
+  function polygon(points, fill, stroke, lineWidth = 1) {
+    context.beginPath(); polygonPath(points);
+    if(fill) { context.fillStyle=fill; context.fill(); }
+    if(stroke) { context.strokeStyle=stroke; context.lineWidth=lineWidth/camera.scale; context.stroke(); }
+  }
+  function line(points, color, pixels = 1, dash = []) {
+    context.beginPath(); polygonPath(points,false); context.strokeStyle=color; context.lineWidth=pixels/camera.scale; context.setLineDash(dash.map(value=>value/camera.scale)); context.stroke(); context.setLineDash([]);
+  }
+  function circle(point,radius,color,fill = null,pixels = 1) {
+    context.beginPath(); context.arc(point.x,point.y,radius,0,Math.PI*2);
+    if(fill) {context.fillStyle=fill;context.fill();}
+    if(color) {context.strokeStyle=color;context.lineWidth=pixels/camera.scale;context.stroke();}
+  }
+  const labelBoxes = [];
+  function tag(point,text,color='#526b60',offsetX=0,offsetY=0) {
+    const anchor = screen(point);
+    if(anchor.x < -100 || anchor.x > viewport.width+100 || anchor.y < -80 || anchor.y > viewport.height+80) return;
+    screenTransform();
+    context.font='10px Bahnschrift, "Segoe UI", sans-serif';
+    const width=context.measureText(text).width+14,height=22;
+    let left=geometry.clamp(anchor.x+offsetX-width/2,8,Math.max(8,viewport.width-width-8));
+    let top=geometry.clamp(anchor.y+offsetY-height/2,8,viewport.height-height-8);
+    for(let attempt=0;attempt<14;attempt++) {
+      const blocked=labelBoxes.some(box=>left<box.x+box.width+4 && left+width+4>box.x && top<box.y+box.height+3 && top+height+3>box.y);
+      if(!blocked) break;
+      top += top+height+26 < viewport.height-72 ? 25 : -30;
+    }
+    if(offsetX || offsetY) { context.beginPath();context.moveTo(anchor.x,anchor.y);context.lineTo(left+width/2,top+height/2);context.strokeStyle=color+'80';context.lineWidth=.7;context.stroke(); }
+    context.fillStyle='#ffffffed';context.beginPath();context.roundRect(left,top,width,height,3);context.fill();
+    context.strokeStyle=color+'35';context.lineWidth=.6;context.stroke();
+    context.fillStyle=color;context.textAlign='center';context.textBaseline='middle';context.fillText(text,left+width/2,top+height/2);
+    labelBoxes.push({x:left,y:top,width,height}); worldTransform();
+  }
+  function drawRoad() {
+    for(const outline of state.roads) polygon(outline,'#e3e8e2','#ced8ce',1);
+    if(layers.grid) {
+      const low=worldPoint({x:0,y:viewport.height}),high=worldPoint({x:viewport.width,y:0});
+      const spacing=settings.gridSize;
+      context.beginPath();
+      for(let position=Math.floor(low.x/spacing)*spacing;position<=high.x;position+=spacing) {context.moveTo(position,low.y);context.lineTo(position,high.y);}
+      for(let position=Math.floor(low.y/spacing)*spacing;position<=high.y;position+=spacing) {context.moveTo(low.x,position);context.lineTo(high.x,position);}
+      context.strokeStyle='#809a801a';context.lineWidth=.65/camera.scale;context.stroke();
+    }
+    for(const item of state.markings) line([item.from,item.to],item.color,item.width*camera.scale,item.dashed ? [24,22] : []);
+  }
+  function drawTurningCircle() {
+    const projection=state.projection;
+    if(!projection.icc || !(layers.circle||layers.debug||state.study) || Math.abs(vehicle.speed)>1.5 && !state.study && !layers.debug) return;
+    const center=projection.icc,radius=Math.abs(projection.radius);
+    if(radius<150) {
+      context.setLineDash([5/camera.scale,7/camera.scale]);circle(center,radius,'#53948165');context.setLineDash([]);
+      line([center,vehicle],'#639184',1,[4,5]);
+    }
+    circle(center,0.12,'#427e6c','#eef5ef',1.5);
+    const tick=.26;
+    line([{x:center.x-tick,y:center.y},{x:center.x+tick,y:center.y}],'#427e6c');
+    line([{x:center.x,y:center.y-tick},{x:center.x,y:center.y+tick}],'#427e6c');
+    tag(center,'Turning center','#4c7c6a',0,-22);
+    if(radius<30) tag({x:(center.x+vehicle.x)/2,y:(center.y+vehicle.y)/2},'R '+radius.toFixed(2)+' m','#4c7c6a',0,15);
+  }
+  function drawWheelPaths() {
+    if(!layers.paths && !state.study) return;
+    const projection=state.projection;
+    context.beginPath();
+    for(const outline of projection.bodies) polygonPath(outline);
+    context.fillStyle='#19897d12';context.fill();
+    for(const corner of projection.corners) line(corner,'#40887335',.8);
+    if(projection.icc) {
+      const radius=projection.radius;
+      const inner={x:0,y:Math.sign(radius)*vehicle.width/2};
+      const outer={x:vehicle.wheelbase+vehicle.frontOverhang,y:-Math.sign(radius)*vehicle.width/2};
+      line(projection.poses.map(pose=>geometry.transform(pose,inner)),'#5b8f7965',1,[3,4]);
+      line(projection.poses.map(pose=>geometry.transform(pose,outer)),'#5b8f7965',1,[3,4]);
+    }
+    line(projection.center,'#72877b85',1,[3,6]);
+    for(let index=0;index<projection.paths.length;index++) line(projection.paths[index].points,pathColors[index],index<2 ? 2.1 : 1.8,index%2 ? [6,5] : []);
+    const finalBody=projection.bodies[projection.bodies.length-1];
+    context.setLineDash([5/camera.scale,4/camera.scale]);polygon(finalBody,'#ffffff18','#3f827776',1);context.setLineDash([]);
+    const finalPose=projection.poses[projection.poses.length-1];
+    for(const wheel of geometry.wheels(finalPose,vehicle,steering())) polygon(wheel.polygon,'#6d92873b',null);
+  }
+  function drawObstacles() {
+    for(const obstacle of state.obstacles) {
+      const selected=state.selected===obstacle.id;
+      if(obstacle.type==='cone') {
+        circle(obstacle,obstacle.width/2,'#a6632c','#d78c46',1);
+        circle(obstacle,obstacle.width*.31,null,'#fbf4dd');
+        circle(obstacle,obstacle.width*.19,null,'#c87535');
+        circle({x:obstacle.x-.04,y:obstacle.y+.04},obstacle.width*.065,null,'#f7c58e');
+      } else if(obstacle.type==='parking') {
+        context.setLineDash([9/camera.scale,5/camera.scale]);polygon(obstacle.polygon,null,'#fcfdf9',2);context.setLineDash([]);
+        const point=screen(obstacle);screenTransform();context.font='24px Bahnschrift, sans-serif';context.fillStyle='#f9fbf6';context.textAlign='center';context.textBaseline='middle';context.fillText('P',point.x,point.y);worldTransform();
+      } else if(obstacle.type==='car') {
+        drawCar({x:obstacle.x-Math.cos(obstacle.heading)*obstacle.length*.3,y:obstacle.y-Math.sin(obstacle.heading)*obstacle.length*.3,heading:obstacle.heading},
+          {length:obstacle.length,width:obstacle.width,wheelbase:obstacle.length*.6,frontOverhang:obstacle.length*.2,rearOverhang:obstacle.length*.2,trackWidth:obstacle.width-.25},true);
+      } else {
+        polygon(obstacle.polygon,obstacle.type==='wall' ? '#88948a' : '#fcfbef',obstacle.type==='wall' ? '#6d7e70' : '#b9c1b3',1);
+        context.save();context.beginPath();polygonPath(obstacle.polygon);context.clip();
+        context.translate(obstacle.x,obstacle.y);context.rotate(obstacle.heading);
+        const spacing=obstacle.type==='wall' ? .9 : .55;
+        for(let offset=-obstacle.length/2;offset<obstacle.length/2;offset+=spacing) {
+          context.fillStyle=obstacle.type==='wall' ? '#ffffff30' : '#c2b58b';
+          context.fillRect(offset,-obstacle.width/2,obstacle.type==='wall' ? .025 : spacing/2,obstacle.width);
+        }
+        context.restore();
+      }
+      if(selected) {
+        polygon(obstacle.polygon,null,'#147c72',2);
+        for(const point of obstacle.type==='cone' ? obstacle.polygon.filter((_,index)=>index%5===0) : obstacle.polygon) circle(point,.07,'#147c72','#ffffff',1);
+      }
+    }
+  }
+  function drawCar(pose,dimensions,parked=false) {
+    context.save();context.translate(pose.x,pose.y);context.rotate(pose.heading);
+    const back=-dimensions.rearOverhang,front=dimensions.wheelbase+dimensions.frontOverhang,half=dimensions.width/2;
+    context.shadowColor='#304c4220';context.shadowBlur=5/camera.scale;context.shadowOffsetY=.08;
+    context.beginPath();context.roundRect(back,-half,dimensions.length,dimensions.width,.19);
+    context.fillStyle=parked ? '#a5afaa' : '#fafcf8';context.fill();context.shadowColor='transparent';
+    context.strokeStyle=parked ? '#768b7f' : '#3a7764';context.lineWidth=1.5/camera.scale;context.stroke();
+    context.fillStyle=parked ? '#6c8076' : '#538577';
+    context.beginPath();context.roundRect(dimensions.wheelbase*.23,-half*.77,dimensions.wheelbase*.58,dimensions.width*.77,.12);context.fill();
+    context.fillStyle=parked ? '#b4bcb7' : '#e5eee5';
+    context.beginPath();context.roundRect(dimensions.wheelbase*.32,-half*.68,dimensions.wheelbase*.28,dimensions.width*.68,.09);context.fill();
+    context.strokeStyle=parked ? '#8c9e92' : '#b4cabd';context.lineWidth=.7/camera.scale;
+    context.beginPath();context.moveTo(dimensions.wheelbase*.85,-half*.7);context.lineTo(front-.3,-half*.6);context.moveTo(dimensions.wheelbase*.85,half*.7);context.lineTo(front-.3,half*.6);context.stroke();
+    context.fillStyle=parked ? '#d4dcd4' : '#e4cd87';
+    context.fillRect(front-.16,-half+.13,.09,.32);context.fillRect(front-.16,half-.45,.09,.32);
+    context.fillStyle='#bc6a57';context.fillRect(back+.06,-half+.12,.075,.25);context.fillRect(back+.06,half-.37,.075,.25);
+    context.restore();
+    if(!parked) {
+      for(const wheel of geometry.wheels(pose,dimensions,steering())) {
+        polygon(wheel.polygon,'#30473e','#fbfdf9',.8);
+        const forward={x:Math.cos(wheel.heading)*.23,y:Math.sin(wheel.heading)*.23};
+        line([{x:wheel.x-forward.x,y:wheel.y-forward.y},{x:wheel.x+forward.x,y:wheel.y+forward.y}],wheel.key.startsWith('F') ? '#62c3c4' : '#dab16a',1.5);
+      }
+      circle(pose,.07,'#ffffff','#147c72',1);
+      if(layers.bounding) {context.setLineDash([3/camera.scale,3/camera.scale]);polygon(geometry.body(pose,dimensions),null,'#a85c96',1);context.setLineDash([]);}
+    }
+  }
+  function drawSafetyMargin() {
+    if(!layers.safety) return;
+    const warning=state.nearest.some(item=>item.distance<settings.safety);
+    const margin=settings.safety;
+    context.save();context.translate(vehicle.x,vehicle.y);context.rotate(vehicle.heading);
+    context.beginPath();context.roundRect(-vehicle.rearOverhang-margin,-vehicle.width/2-margin,vehicle.length+2*margin,vehicle.width+2*margin,margin+.01);
+    context.fillStyle=warning ? '#c88c3020' : '#438b7110';context.fill();context.strokeStyle=warning ? '#bc8228a0' : '#72a38890';
+    context.lineWidth=1/camera.scale;context.setLineDash([4/camera.scale,4/camera.scale]);context.stroke();context.restore();
+    for (const wheel of geometry.wheels(vehicle,vehicle,steering()).slice(0,2)) {
+      const lateral = geometry.local(vehicle,wheel.polygon.reduce((outer,point)=>Math.abs(geometry.local(vehicle,point).y)>Math.abs(geometry.local(vehicle,outer).y) ? point : outer));
+      if(Math.abs(lateral.y)<=vehicle.width/2) continue;
+      context.save();context.beginPath();polygonPath(wheel.polygon);context.lineJoin='round';context.lineWidth=2*margin;
+      context.strokeStyle=warning ? '#c88c3016' : '#438b7110';context.stroke();context.restore();
+    }
+  }
+  function drawMeasurements() {
+    if(!layers.measurements) return;
+    for(const [side,measurement] of Object.entries(state.clearances)) {
+      if(!Number.isFinite(measurement.distance) || measurement.distance>8 || !measurement.from) continue;
+      const color=measurement.distance<settings.safety ? '#b6742b' : '#657e6d';
+      line([measurement.from,measurement.to],color,1,[2,3]);
+      const from=measurement.from,to=measurement.to;
+      const angle=Math.atan2(to.y-from.y,to.x-from.x)+Math.PI/2;
+      const tick=.1;
+      for(const point of [from,to]) line([{x:point.x+Math.cos(angle)*tick,y:point.y+Math.sin(angle)*tick},{x:point.x-Math.cos(angle)*tick,y:point.y-Math.sin(angle)*tick}],color,1);
+      tag({x:(from.x+to.x)/2,y:(from.y+to.y)/2},side.toUpperCase()+' '+measurement.distance.toFixed(2)+' m',color,0,-10);
+    }
+  }
+  function drawPathLabels() {
+    if(!layers.paths && !state.study) return;
+    for(let index=0;index<state.projection.paths.length;index++) {
+      const path=state.projection.paths[index];
+      tag(path.points[path.points.length-1],path.name,pathColors[index],index%2 ? 23 : -23,index<2 ? -22 : 21);
+    }
+    if(state.predictedCollision) {
+      const hit=state.predictedCollision;
+      polygon(geometry.body(hit.pose,vehicle),'#b64e3810','#b64e3870',1);
+      circle(hit.point,.15,'#b64e38','#fff5ed',1.5);
+      tag(hit.point,'CONTACT IN '+hit.distance.toFixed(1)+' m','#b34d35',10,-29);
+    }
+  }
+  function drawOfftracking() {
+    if(!layers.offtracking || !state.projection.icc || !layers.paths && !state.study) return;
+    const center=state.projection.icc,radius=Math.abs(state.projection.radius);
+    const rearRadius=radius-vehicle.trackWidth/2;
+    const frontRadius=Math.hypot(rearRadius,vehicle.wheelbase);
+    const difference=frontRadius-rearRadius;
+    if(difference<.03) return;
+    const pose=state.projection.poses[Math.floor(state.projection.poses.length*.58)];
+    const rear=geometry.transform(pose,{x:0,y:Math.sign(state.projection.radius)*vehicle.trackWidth/2});
+    const radial={x:(rear.x-center.x)/rearRadius,y:(rear.y-center.y)/rearRadius};
+    const front={x:center.x+radial.x*frontRadius,y:center.y+radial.y*frontRadius};
+    line([rear,front],'#a6752b',2);
+    circle(rear,.06,null,'#a6752b');circle(front,.06,null,'#a6752b');
+    tag({x:(rear.x+front.x)/2,y:(rear.y+front.y)/2},difference.toFixed(2)+' m offtracking','#a6752b',-45,5);
+  }
+  function drawDebugGeometry() {
+    if(!layers.debug) return;
+    const forward=geometry.transform(vehicle,{x:vehicle.wheelbase+1.5,y:0});
+    const left=geometry.transform(vehicle,{x:0,y:2.5});
+    line([vehicle,forward],'#aa514d',1.5);line([vehicle,left],'#458377',1.5);
+    tag(forward,'+X forward','#aa514d',0,-18);tag(left,'+Y left','#458377',0,-18);
+    const frontAxle=geometry.transform(vehicle,{x:vehicle.wheelbase,y:0});
+    line([vehicle,frontAxle],'#79518a',1.5,[3,3]);
+    const wheelPoints=geometry.wheelLocals(vehicle).map(point=>geometry.transform(vehicle,point));
+    line([wheelPoints[2],wheelPoints[3]],'#79518a',1.5);
+    tag(geometry.transform(vehicle,{x:vehicle.wheelbase/2,y:0}),'L '+vehicle.wheelbase.toFixed(2)+' m','#79518a',40,0);
+    tag(vehicle,'Track '+vehicle.trackWidth.toFixed(2)+' m','#79518a',0,27);
+  }
+  function drawSteeringWheel() {
+    const drawing=dialContext;
+    drawing.setTransform(2,0,0,2,0,0);drawing.clearRect(0,0,151,151);
+    drawing.translate(75.5,75.5);
+    drawing.strokeStyle='#e0e8e0';drawing.lineWidth=1;drawing.beginPath();drawing.arc(0,0,71,0,Math.PI*2);drawing.stroke();
+    for(let tick=0;tick<36;tick++) {
+      const angle=tick*Math.PI/18;
+      drawing.beginPath();drawing.moveTo(Math.sin(angle)*67,-Math.cos(angle)*67);drawing.lineTo(Math.sin(angle)*(tick%3 ? 65 : 62),-Math.cos(angle)*(tick%3 ? 65 : 62));drawing.stroke();
+    }
+    drawing.fillStyle='#147c72';drawing.beginPath();drawing.moveTo(-3,-73);drawing.lineTo(3,-73);drawing.lineTo(0,-68);drawing.fill();
+    drawing.rotate(steering()*settings.ratio*geometry.DEG);
+    drawing.beginPath();drawing.arc(0,0,53,0,Math.PI*2);drawing.strokeStyle='#293f37';drawing.lineWidth=11;drawing.stroke();
+    drawing.beginPath();drawing.arc(0,0,53,Math.PI*1.45,Math.PI*1.55);drawing.strokeStyle='#60b29a';drawing.lineWidth=11;drawing.stroke();
+    drawing.strokeStyle='#354d42';drawing.lineWidth=10;drawing.lineCap='round';
+    for(const angle of [Math.PI*.04,Math.PI*.96,Math.PI*1.5]) {drawing.beginPath();drawing.moveTo(0,0);drawing.lineTo(Math.cos(angle)*47,-Math.sin(angle)*47);drawing.stroke();}
+    drawing.beginPath();drawing.arc(0,0,20,0,Math.PI*2);drawing.fillStyle='#edf2ea';drawing.fill();drawing.strokeStyle='#344c41';drawing.lineWidth=2;drawing.stroke();
+    drawing.rotate(-steering()*settings.ratio*geometry.DEG);
+    drawing.fillStyle='#5a7d69';drawing.font='9px Bahnschrift, sans-serif';drawing.textAlign='center';drawing.textBaseline='middle';drawing.fillText('C',0,1);
+  }
+  function render() {
+    screenTransform();context.clearRect(0,0,viewport.width,viewport.height);context.fillStyle='#edf1e9';context.fillRect(0,0,viewport.width,viewport.height);
+    labelBoxes.length=0;
+    labelBoxes.push({x:12,y:12,width:Math.min(270,viewport.width-76),height:101},{x:viewport.width-59,y:12,width:49,height:174},{x:12,y:viewport.height-100,width:230,height:100});
+    const carBox=geometry.body(vehicle,vehicle).map(screen);
+    const minX=Math.min(...carBox.map(point=>point.x)),minY=Math.min(...carBox.map(point=>point.y));
+    labelBoxes.push({x:minX-3,y:minY-3,width:Math.max(...carBox.map(point=>point.x))-minX+6,height:Math.max(...carBox.map(point=>point.y))-minY+6});
+    worldTransform();drawRoad();drawWheelPaths();drawTurningCircle();drawObstacles();drawSafetyMargin();drawCar(vehicle,vehicle);drawOfftracking();drawPathLabels();drawMeasurements();drawDebugGeometry();
+    const hit=state.currentCollision || state.contact;
+    if(hit) {circle(hit.point,.22,'#b84035','#b8403530',2);tag(hit.point,hit.label+' contact','#b84035',25,25);}
+    screenTransform();drawSteeringWheel();
+  }
+
+  function updateUI() {
+    const angle=steering(),radius=Math.abs(geometry.radius(vehicle,angle)),angles=geometry.ackermann(vehicle,angle);
+    const turn=Math.abs(angle)<.05 ? 'Straight ahead' : angle<0 ? 'Turning left' : 'Turning right';
+    write('roadAngle',angle.toFixed(1));write('steeringOutput',state.input.toFixed(1)+'\u00b0');
+    write('wheelRotation',(angle*settings.ratio).toFixed(0));write('ratioPill',settings.ratio+':1 RATIO');
+    write('steeringDirection',Math.abs(angle)<.05 ? 'CENTER / ROAD WHEELS' : (angle<0 ? 'LEFT' : 'RIGHT')+' / ROAD WHEELS');
+    write('radiusReadout',Number.isFinite(radius) ? radius.toFixed(2)+' m' : 'Straight');
+    write('innerAngle',Math.abs(angles.inner).toFixed(1)+'\u00b0');write('outerAngle',Math.abs(angles.outer).toFixed(1)+'\u00b0');
+    write('diameter',Number.isFinite(radius) ? (radius*2).toFixed(2)+' m' : '\u221e');
+    write('turnCaption',turn);
+    write('sceneSubtitle',Number.isFinite(radius) ? 'Rear-axle radius '+radius.toFixed(2)+' m' : 'All four wheel paths are parallel');
+    write('modeCaption',state.training ? (state.completed ? 'MARGIN TRAINING / COMPLETE' : 'MARGIN TRAINING / GATE '+Math.min(4,state.checkpoints.filter(checkpoint=>checkpoint.done).length+1)+' OF 4') : state.study ? 'PATH STUDY / PAUSED' : state.paused ? 'DRIVING / PAUSED' : 'LIVE GEOMETRY');
+    write('speedReadout',(Math.abs(vehicle.speed)*3.6).toFixed(1));write('travelReadout',state.travel.toFixed(1));
+    const gearHtml=direction()===1 ? 'D <small>Forward</small>' : 'R <small>Reverse</small>';
+    if(element('gearReadout').innerHTML!==gearHtml) element('gearReadout').innerHTML=gearHtml;
+    element('studyMode').setAttribute('aria-pressed',state.study);element('trainingMode').setAttribute('aria-pressed',state.training);
+    element('pause').setAttribute('aria-pressed',state.paused);element('followCar').setAttribute('aria-pressed',state.follow);
+    element('forwardGear').setAttribute('aria-pressed',state.gear===1);element('reverseGear').setAttribute('aria-pressed',state.gear===-1);
+    element('trainingSummary').classList.toggle('active',state.training);
+    for(const [side,measurement] of Object.entries(state.clearances)) {
+      write('clear-'+side,Number.isFinite(measurement.distance) ? measurement.distance.toFixed(2)+' m' : 'Open');
+      element('clear-'+side).className=measurement.distance<.01 ? 'hit' : measurement.distance<settings.safety ? 'near' : '';
+    }
+    write('marginPill',settings.safety.toFixed(2)+' m MARGIN');write('safetyOutput',settings.safety.toFixed(2)+' m');
+    write('speedLimitOutput',settings.speedLimit+' km/h');write('projectionOutput',settings.projection+' m');
+    write('sensitivityOutput',settings.sensitivity.toFixed(1)+'\u00d7');write('returnSpeedOutput',settings.returnSpeed+'\u00b0/s');
+    const hit=state.currentCollision || state.contact;
+    const nearest=state.nearest.reduce((best,item)=>item.distance<best.distance ? item : best,{distance:Infinity});
+    let statusTitle='Clear of obstacles',statusText='Safety margin maintained',statusClass='';
+    if(hit) {statusTitle='Collision / '+typeNames[hit.obstacle.type];statusText=hit.label+' contact';statusClass='danger';}
+    else if(nearest.distance<settings.safety) {statusTitle='Safety margin violated';statusText='Nearest clearance '+nearest.distance.toFixed(2)+' m';statusClass='warning';}
+    else if(state.predictedCollision) {statusTitle='Projected contact in '+state.predictedCollision.distance.toFixed(1)+' m';statusText=state.predictedCollision.label+' / '+typeNames[state.predictedCollision.obstacle.type];statusClass='warning';}
+    const status=element('status');status.className='status '+statusClass;
+    if(status.firstElementChild.textContent!==statusTitle) status.firstElementChild.textContent=statusTitle;
+    if(status.lastElementChild.textContent!==statusText) status.lastElementChild.textContent=statusText;
+    const rearRadius=radius-vehicle.trackWidth/2,offtracking=Number.isFinite(radius) ? Math.hypot(rearRadius,vehicle.wheelbase)-rearRadius : 0;
+    let observation=Number.isFinite(radius) ? 'At '+Math.abs(angle).toFixed(1)+'\u00b0, the rear-axle center follows a '+radius.toFixed(2)+' m radius. The inside rear wheel travels on a circle '+offtracking.toFixed(2)+' m tighter than the inside front wheel.' : 'At zero steering, all four wheels travel along parallel straight lines. The front and rear wheels on each side share the same track.';
+    if(state.gear<0) observation+=' In reverse, the same circles are traced in the opposite direction; the front overhang swings outward.';
+    write('educationText',observation);write('exerciseGoal',goals[state.scenario]);element('education').hidden=!layers.education;
+    write('score',state.score);write('scoreEvent',state.scoreEvent);
+    const center=state.projection.icc;
+    element('debugReadout').hidden=!layers.debug;
+    if(layers.debug) write('debugReadout',[
+      'Rear axle X   '+vehicle.x.toFixed(3)+' m','Rear axle Y   '+vehicle.y.toFixed(3)+' m','Heading       '+(vehicle.heading/geometry.DEG).toFixed(2)+' deg',
+      'Input         '+state.input.toFixed(2)+' deg','Road steering '+angle.toFixed(2)+' deg','Wheelbase     '+vehicle.wheelbase.toFixed(2)+' m',
+      'Track width   '+vehicle.trackWidth.toFixed(2)+' m','Radius        '+(Number.isFinite(radius) ? radius.toFixed(3)+' m' : 'Infinity / straight'),
+      'ICC X         '+(center ? center.x.toFixed(3) : '--'),'ICC Y         '+(center ? center.y.toFixed(3) : '--'),
+      'Inner angle   '+Math.abs(angles.inner).toFixed(2)+' deg','Outer angle   '+Math.abs(angles.outer).toFixed(2)+' deg',
+      'Front left    '+angles.left.toFixed(2)+' deg','Front right   '+angles.right.toFixed(2)+' deg'
+    ].join('\n'));
+    const scaleLength=camera.scale>35 ? 1 : 2;element('scaleLine').style.width=(scaleLength*camera.scale)+'px';write('scaleText',scaleLength+' m');
+    element('legend').hidden=!layers.paths&&!state.study;
+    number('positionX',vehicle.x.toFixed(2));number('positionY',vehicle.y.toFixed(2));number('heading',(vehicle.heading/geometry.DEG).toFixed(1));
+  }
+  function syncDimensions() {
+    for(const [id,key] of Object.entries({vehicleLength:'length',vehicleWidth:'width',vehicleWheelbase:'wheelbase',vehicleTrack:'trackWidth',frontOverhang:'frontOverhang',rearOverhang:'rearOverhang'})) number(id,Number(vehicle[key].toFixed(3)));
+  }
+  function changeDimension(id,key) {
+    const input=element(id);
+    if(!input.value.trim() || !Number.isFinite(input.valueAsNumber)) return;
+    vehicle[key]=Number(geometry.clamp(input.valueAsNumber,Number(input.min),Number(input.max)).toFixed(2));
+    vehicle.wheelbase=geometry.clamp(vehicle.wheelbase,Math.max(1.6,vehicle.length-4),Math.min(4.5,vehicle.length-.4));
+    const available=Number((vehicle.length-vehicle.wheelbase).toFixed(2));
+    const minimumOverhang=Math.max(.2,available-2),maximumOverhang=Math.min(2,available-.2);
+    if(key==='rearOverhang') {vehicle.rearOverhang=geometry.clamp(vehicle.rearOverhang,minimumOverhang,maximumOverhang);vehicle.frontOverhang=available-vehicle.rearOverhang;}
+    else if(key==='frontOverhang') vehicle.frontOverhang=geometry.clamp(vehicle.frontOverhang,minimumOverhang,maximumOverhang);
+    else {const proportion=vehicle.frontOverhang/(vehicle.frontOverhang+vehicle.rearOverhang);vehicle.frontOverhang=geometry.clamp(available*proportion,minimumOverhang,maximumOverhang);}
+    vehicle.frontOverhang=Number(vehicle.frontOverhang.toFixed(2));vehicle.rearOverhang=Number((available-vehicle.frontOverhang).toFixed(2));
+    vehicle.trackWidth=Number(geometry.clamp(vehicle.trackWidth,.8,Math.min(2.5,vehicle.width-.24)).toFixed(2));
+    element('vehiclePreset').value='custom';vehicle.speed=0;syncDimensions();invalidate();
+  }
+  function switchTab(name) {
+    document.querySelectorAll('[data-tab]').forEach(button=>button.setAttribute('aria-selected',button.dataset.tab===name));
+    document.querySelectorAll('.tab-content').forEach(panel=>panel.classList.toggle('active',panel.id===name+'Panel'));
+  }
+  function renderObjectList() {
+    const list=element('objectList');list.replaceChildren();write('objectCount',state.obstacles.length+' OBJECTS');
+    if(!state.obstacles.length) {const note=document.createElement('p');note.className='empty-note';note.textContent='No objects in this scene';list.append(note);}
+    for(const obstacle of state.obstacles) {
+      const button=document.createElement('button');button.className=state.selected===obstacle.id ? 'active' : '';button.setAttribute('aria-pressed',state.selected===obstacle.id);
+      const name=document.createElement('span');name.textContent=typeNames[obstacle.type];
+      const badge=document.createElement('small');badge.textContent=String(obstacle.id).padStart(2,'0');button.append(name,badge);
+      button.addEventListener('click',()=>{state.selected=obstacle.id;updateSelectedFields();renderObjectList();invalidate(false);});list.append(button);
+    }
+  }
+  function selectedObject() { return state.obstacles.find(obstacle=>obstacle.id===state.selected); }
+  function updateSelectedFields() {
+    const obstacle=selectedObject();element('objectProperties').hidden=!obstacle;if(!obstacle) return;
+    write('selectedName',typeNames[obstacle.type]+' '+obstacle.id);
+    number('objectX',obstacle.x.toFixed(2));number('objectY',obstacle.y.toFixed(2));number('objectLength',obstacle.length.toFixed(2));number('objectWidth',obstacle.width.toFixed(2));number('objectHeading',(obstacle.heading/geometry.DEG).toFixed(1));
+    element('objectLength').disabled=obstacle.type==='cone';element('objectHeading').disabled=obstacle.type==='cone';
+  }
+  function removeSelected() { if(!selectedObject()) return;leaveTraining();state.obstacles=state.obstacles.filter(obstacle=>obstacle.id!==state.selected);state.selected=null;refreshObstacles();renderObjectList();updateSelectedFields(); }
+  function bindHold(id,action,initial) {
+    const button=element(id);
+    button.addEventListener('pointerdown',event=>{if(event.button!==0)return;event.preventDefault();button.setPointerCapture(event.pointerId);held.add(action);initial?.();button.classList.add('active');});
+    const release=()=>{held.delete(action);button.classList.remove('active');};
+    button.addEventListener('pointerup',release);button.addEventListener('pointercancel',release);button.addEventListener('lostpointercapture',release);
+    button.addEventListener('click',event=>{if(event.detail===0){initial?.();if(action==='forward'||action==='reverse'){vehicle.speed=(action==='forward'?1:-1)*Math.min(.5,settings.speedLimit/3.6);invalidate();}}});
+  }
+  function setupEvents() {
+    element('steering').addEventListener('input',event=>setInput(Number(event.target.value)));
+    element('steering').addEventListener('pointerdown',()=>{state.sliderHeld=true;});
+    window.addEventListener('pointerup',()=>{state.sliderHeld=false;});
+    element('centerSteering').addEventListener('click',()=>setInput(0));
+    bindHold('steerLeft','left',()=>setInput(state.input-2));bindHold('steerRight','right',()=>setInput(state.input+2));
+    bindHold('forward','forward',engageDrive);bindHold('reverse','reverse',engageDrive);bindHold('brake','brake',()=>{vehicle.speed=0;invalidate(false);});
+    element('forwardGear').addEventListener('click',()=>setGear(1));element('reverseGear').addEventListener('click',()=>setGear(-1));
+    element('pause').addEventListener('click',()=>{if(state.study){setStudy(false);}else{state.paused=!state.paused;vehicle.speed=0;invalidate(false);}});
+    element('studyMode').addEventListener('click',()=>setStudy(!state.study));
+    element('trainingMode').addEventListener('click',()=>{if(state.training){leaveTraining();}else{buildScenario('training');}});
+    element('newCourse').addEventListener('click',()=>buildScenario('training'));
+    element('exercise').addEventListener('change',event=>buildScenario(event.target.value));
+    element('resetCar').addEventListener('click',resetVehicle);element('resetScenario').addEventListener('click',resetScenario);
+    element('wallTarget').addEventListener('change',()=>buildScenario('wall'));
+    for(const [id,key] of Object.entries({speedLimit:'speedLimit',projection:'projection',safety:'safety',sensitivity:'sensitivity',returnSpeed:'returnSpeed'})) element(id).addEventListener('input',event=>{settings[key]=Number(event.target.value);if(key==='speedLimit') vehicle.speed=geometry.clamp(vehicle.speed,-settings.speedLimit/3.6,settings.speedLimit/3.6);invalidate();});
+    element('steeringRatio').addEventListener('input',()=>{settings.ratio=numericInput('steeringRatio',settings.ratio,5,25);invalidate(false);});
+    element('steeringRatio').addEventListener('change',()=>{element('steeringRatio').value=settings.ratio;});
+    element('autoCenter').addEventListener('change',event=>{settings.autoCenter=event.target.checked;});
+    element('gridSize').addEventListener('change',event=>{settings.gridSize=Number(event.target.value);invalidate(false);});
+    for(const [key,labelText] of Object.entries(layerLabels)) {
+      const row=document.createElement('div');row.className='check-row';const label=document.createElement('label');const input=document.createElement('input');input.type='checkbox';input.checked=layers[key];input.id='layer-'+key;
+      input.addEventListener('change',()=>{
+        layers[key]=input.checked;
+        if(state.study && !input.checked && (key==='paths'||key==='circle')) {state.study=false;state.paused=true;}
+        invalidate();
+      });label.append(input,document.createTextNode(labelText));row.append(label);element('layerControls').append(row);
+    }
+    for(const [id,key] of Object.entries({vehicleLength:'length',vehicleWidth:'width',vehicleWheelbase:'wheelbase',vehicleTrack:'trackWidth',frontOverhang:'frontOverhang',rearOverhang:'rearOverhang'})) {
+      element(id).addEventListener('input',()=>changeDimension(id,key));element(id).addEventListener('change',()=>{element(id).value=Number(vehicle[key].toFixed(3));syncDimensions();});
+    }
+    element('vehiclePreset').addEventListener('change',event=>{if(presets[event.target.value]){Object.assign(vehicle,presets[event.target.value]);vehicle.speed=0;syncDimensions();invalidate();}});
+    for(const [id,key] of Object.entries({positionX:'x',positionY:'y',heading:'heading'})) element(id).addEventListener('input',()=>{leaveTraining();vehicle[key]=numericInput(id,key==='heading'?vehicle.heading/geometry.DEG:vehicle[key],key==='heading'?-360:-10000,key==='heading'?360:10000)*(key==='heading'?geometry.DEG:1);vehicle.speed=0;state.contact=null;invalidate();});
+    document.querySelectorAll('[data-tab]').forEach(button=>button.addEventListener('click',()=>switchTab(button.dataset.tab)));
+    document.querySelectorAll('[data-add]').forEach(button=>button.addEventListener('click',()=>{
+      leaveTraining();const type=button.dataset.add;const position=geometry.transform(vehicle,{x:vehicle.wheelbase+2,y:-3});
+      const sizes={cone:[.48,.48],wall:[4,.35],car:[4.5,1.8],curb:[3,.25],parking:[5.5,2.5]};
+      const obstacle=addObstacle(type,position.x,position.y,...sizes[type],vehicle.heading);state.selected=obstacle.id;refreshObstacles();renderObjectList();updateSelectedFields();
+    }));
+    for(const [id,key] of Object.entries({objectX:'x',objectY:'y',objectLength:'length',objectWidth:'width',objectHeading:'heading'})) element(id).addEventListener('input',()=>{
+      const obstacle=selectedObject();if(!obstacle)return;leaveTraining();const input=element(id);if(!input.value.trim()||!Number.isFinite(input.valueAsNumber))return;
+      const value=geometry.clamp(input.valueAsNumber,input.min ? Number(input.min) : -10000,input.max ? Number(input.max) : 10000);obstacle[key]=key==='heading'?value*geometry.DEG:value;if(obstacle.type==='cone')obstacle.length=obstacle.width;refreshObstacles();
+    });
+    element('deleteObject').addEventListener('click',removeSelected);
+    element('clearObjects').addEventListener('click',()=>{leaveTraining();state.obstacles=[];state.selected=null;refreshObstacles();renderObjectList();updateSelectedFields();});
+    element('zoomIn').addEventListener('click',()=>{camera.scale=geometry.clamp(camera.scale*1.2,8,100);invalidate(false);});
+    element('zoomOut').addEventListener('click',()=>{camera.scale=geometry.clamp(camera.scale/1.2,8,100);invalidate(false);});
+    element('resetView').addEventListener('click',()=>{state.follow=false;resetView();});
+    element('followCar').addEventListener('click',()=>{state.follow=!state.follow;invalidate(false);});
+    canvas.addEventListener('wheel',event=>{
+      event.preventDefault();const point=pointerPoint(event),before=worldPoint(point);camera.scale=geometry.clamp(camera.scale*Math.exp(-event.deltaY*.001),8,100);const after=worldPoint(point);camera.x+=before.x-after.x;camera.y+=before.y-after.y;state.follow=false;invalidate(false);
+    },{passive:false});
+    canvas.addEventListener('pointerdown',event=>{
+      if(event.button!==0)return;canvas.focus({preventScroll:true});canvas.setPointerCapture(event.pointerId);
+      const point=pointerPoint(event),world=worldPoint(point);
+      const obstacle=[...state.obstacles].reverse().find(item=>geometry.contains(item.polygon,world));
+      if(geometry.contains(geometry.body(vehicle,vehicle),world)) {leaveTraining();state.drag={type:'vehicle',offset:geometry.subtract(vehicle,world)};vehicle.speed=0;}
+      else if(obstacle) {leaveTraining();state.selected=obstacle.id;state.drag={type:'obstacle',obstacle,offset:geometry.subtract(obstacle,world)};renderObjectList();updateSelectedFields();}
+      else {state.drag={type:'camera',point,x:camera.x,y:camera.y};state.follow=false;state.selected=null;renderObjectList();updateSelectedFields();}
+      canvas.style.cursor='grabbing';invalidate(false);
+    });
+    canvas.addEventListener('pointermove',event=>{
+      const drag=state.drag;if(!drag)return;const point=pointerPoint(event),world=worldPoint(point);
+      if(drag.type==='camera') {camera.x=drag.x-(point.x-drag.point.x)/camera.scale;camera.y=drag.y+(point.y-drag.point.y)/camera.scale;invalidate(false);}
+      else {const target=drag.type==='vehicle'?vehicle:drag.obstacle;target.x=world.x+drag.offset.x;target.y=world.y+drag.offset.y;state.contact=null;if(drag.type==='obstacle'){refreshObstacles();updateSelectedFields();}invalidate();}
+    });
+    const endDrag=()=>{state.drag=null;canvas.style.cursor='default';};canvas.addEventListener('pointerup',endDrag);canvas.addEventListener('pointercancel',endDrag);canvas.addEventListener('lostpointercapture',endDrag);
+    const wheelAngle=event=>{const box=dial.getBoundingClientRect();return Math.atan2(event.clientY-box.top-box.height/2,event.clientX-box.left-box.width/2);};
+    dial.addEventListener('pointerdown',event=>{if(event.button!==0)return;dial.setPointerCapture(event.pointerId);state.wheelDrag={angle:wheelAngle(event)};});
+    dial.addEventListener('pointermove',event=>{if(!state.wheelDrag)return;const angle=wheelAngle(event);let delta=angle-state.wheelDrag.angle;delta=Math.atan2(Math.sin(delta),Math.cos(delta));setInput(state.input+delta/geometry.DEG/settings.ratio/settings.sensitivity);state.wheelDrag.angle=angle;});
+    for(const eventName of ['pointerup','pointercancel','lostpointercapture']) dial.addEventListener(eventName,()=>{state.wheelDrag=null;});
+    window.addEventListener('keydown',event=>{
+      if(event.target instanceof Element && event.target.closest('input,select,textarea,[contenteditable=true]'))return;
+      if(['KeyW','KeyS','KeyA','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space','KeyR'].includes(event.code)) {
+        event.preventDefault();keys.add(event.code);
+        if(['KeyW','KeyS','ArrowUp','ArrowDown'].includes(event.code)&&!event.repeat)engageDrive();
+        if(event.code==='KeyR'&&!event.repeat)resetVehicle();
+      }
+      if(event.code==='Delete')removeSelected();
+    });
+    window.addEventListener('keyup',event=>keys.delete(event.code));
+    function releaseControls() {keys.clear();held.clear();state.sliderHeld=false;state.wheelDrag=null;state.drag=null;vehicle.speed=0;document.querySelectorAll('.steer-buttons .active,.pedals .active').forEach(button=>button.classList.remove('active'));invalidate(false);}
+    window.addEventListener('blur',releaseControls);
+    document.addEventListener('visibilitychange',()=>{if(document.hidden){releaseControls();state.paused=true;}});
+  }
+  function resize() {
+    const bounds=canvas.getBoundingClientRect();viewport.width=bounds.width;viewport.height=bounds.height;viewport.dpr=Math.min(window.devicePixelRatio||1,2);
+    canvas.width=Math.round(bounds.width*viewport.dpr);canvas.height=Math.round(bounds.height*viewport.dpr);invalidate(false);
+  }
+  let previousTime=0;
+  function frame(time) {
+    const elapsed=previousTime ? Math.min((time-previousTime)/1000,.05) : 0;previousTime=time;
+    updateVehiclePhysics(elapsed);
+    if(state.contact && time>state.contact.until) {state.contact=null;invalidate(false);}
+    if(state.follow && !state.drag) {
+      const target=geometry.transform(vehicle,{x:2.5,y:0});
+      if(Math.hypot(camera.x-target.x,camera.y-target.y)>.005) {camera.x+=(target.x-camera.x)*Math.min(1,elapsed*5);camera.y+=(target.y-camera.y)*Math.min(1,elapsed*5);invalidate(false);}
+    }
+    if(state.dirty) {
+      if(state.geometryDirty) {updateGeometry();updateTraining();}
+      render();updateUI();state.dirty=false;
+    }
+    requestAnimationFrame(frame);
+  }
+  setupEvents();resize();buildScenario('studio');
+  new ResizeObserver(resize).observe(element('scene'));
+  requestAnimationFrame(frame);
+  return { vehicle, settings, layers, state, camera, viewport, steering, collisionAt, updateGeometry, updateVehiclePhysics, updateTraining, buildScenario, resetScenario, resetVehicle, setInput, setGear, setStudy, refreshObstacles, addObstacle, screen, worldPoint, invalidate };
+})();
+</script>
+</body>
+</html>
